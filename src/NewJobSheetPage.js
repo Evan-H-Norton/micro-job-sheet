@@ -362,6 +362,7 @@ function NewJobSheetPage() {
                                 fullWidth
                                 value={technicianName}
                                 onChange={(e) => setTechnicianName(e.target.value)}
+                                disabled={!!user?.displayName}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>

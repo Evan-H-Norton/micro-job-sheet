@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, TextField, Grid, Divider, Paper, useMediaQuery } from '@mui/material';
+import { Typography, Container, TextField, Grid, Divider, Paper, useMediaQuery, Button, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 function JobSheetDetailsPage() {
   const [jobSheet, setJobSheet] = useState(null);
   const { id } = useParams();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchJobSheet = async () => {
@@ -28,6 +29,9 @@ function JobSheetDetailsPage() {
 
   return (
     <Container maxWidth="md">
+      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+        <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+      </Box>
       <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
           Job Sheet Details

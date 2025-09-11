@@ -61,7 +61,10 @@ function EditCompanyProfilePage() {
 
   return (
     <Container maxWidth="md">
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+        <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+      </Box>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
         {id ? 'Edit Company Profile' : 'New Company Profile'}
       </Typography>
       <form onSubmit={handleSubmit}>

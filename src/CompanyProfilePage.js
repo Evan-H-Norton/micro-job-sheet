@@ -27,7 +27,7 @@ function CompanyProfilePage() {
   return (
     <Container maxWidth="md">
       <Paper sx={{ p: 2, mt: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
           {profile.companyName}
         </Typography>
         <Typography variant="h6">Company Address:</Typography>
