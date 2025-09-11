@@ -42,6 +42,7 @@ function EditJobSheetPage() {
     const [contactNameInput, setContactNameInput] = useState('');
     const [contactCellphoneInput, setContactCellphoneInput] = useState('');
     const [contactEmailInput, setContactEmailInput] = useState('');
+    const [selectedContact, setSelectedContact] = useState(null);
 
     useEffect(() => {
         const fetchCompanies = async () => {
@@ -59,25 +60,33 @@ function EditJobSheetPage() {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setCompanyNameInput(data.companyName);
-                setCompanyAddress(data.companyAddress);
-                setCompanyTelephone(data.companyTelephone);
-                setContactNameInput(data.contact.name);
-                setContactCellphoneInput(data.contact.cellphone);
-                setContactEmailInput(data.contact.email);
-                setJobNumber(data.jobNumber);
-                setOrderNumber(data.orderNumber);
-                setDate(data.date);
-                setFaultComplaint(data.faultComplaint);
-                setArrivalTime(data.arrivalTime);
-                setDepartureTime(data.departureTime);
-                setTotalTime(data.totalTime);
-                setWorkCarriedOut(data.workCarriedOut);
-                setTechnicianName(data.technicianName);
-                setTechnicianSignature(data.technicianSignature);
-                setCustomerName(data.customerName);
-                setCustomerSignature(data.customerSignature);
-                
+                setCompanyNameInput(data.companyName || '');
+                setCompanyAddress(data.companyAddress || '');
+                setCompanyTelephone(data.companyTelephone || '');
+                setContactNameInput(data.contact?.name || '');
+                setContactCellphoneInput(data.contact?.cellphone || '');
+                setContactEmailInput(data.contact?.email || '');
+                setJobNumber(data.jobNumber || '');
+                setOrderNumber(data.orderNumber || '');
+                setDate(data.date || new Date().toISOString().slice(0, 10));
+                setFaultComplaint(data.faultComplaint || '');
+                setArrivalTime(data.arrivalTime || '');
+                setDepartureTime(data.departureTime || '');
+                setTotalTime(data.totalTime || '');
+                setWorkCarriedOut(data.workCarriedOut || '');
+                setTechnicianName(data.technicianName || '');
+                setTechnicianSignature(data.technicianSignature || null);
+                setCustomerName(data.customerName || '');
+                setCustomerSignature(data.customerSignature || null);
+
+                // Fetch and set the selected company
+                const companiesCollection = collection(db, 'companyProfiles');
+                const companiesSnapshot = await getDocs(companiesCollection);
+                const companiesList = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const company = companiesList.find(c => c.companyName === data.companyName);
+                if (company) {
+                    setSelectedCompany(company);
+                }
             }
         };
         fetchJobSheet();
@@ -89,15 +98,23 @@ function EditJobSheetPage() {
             setCompanyAddress(selectedCompany.companyAddress || '');
             setCompanyTelephone(selectedCompany.companyTelephone || '');
             if (selectedCompany.contacts && selectedCompany.contacts.length > 0) {
-                setContactNameInput(selectedCompany.contacts[0].name || '');
-                setContactCellphoneInput(selectedCompany.contacts[0].cellphone || '');
-                setContactEmailInput(selectedCompany.contacts[0].email || '');
+                if (selectedCompany.contacts.length > 1) {
+                    // Multiple contacts, do nothing until user selects one
+                } else {
+                    // Single contact, auto-populate
+                    const contact = selectedCompany.contacts[0];
+                    setContactNameInput(contact.name || '');
+                    setContactCellphoneInput(contact.cellphone || '');
+                    setContactEmailInput(contact.email || '');
+                }
             } else {
+                // No contacts, clear fields
                 setContactNameInput('');
                 setContactCellphoneInput('');
                 setContactEmailInput('');
             }
         } else {
+            // No company selected, clear all related fields
             setCompanyAddress('');
             setCompanyTelephone('');
             setContactNameInput('');
@@ -225,12 +242,33 @@ function EditJobSheetPage() {
                             />
                         </Grid>
                         <Grid item width="50%">
-                            <TextField
-                                label="Contact Name"
-                                fullWidth
-                                value={contactNameInput}
-                                onChange={(e) => setContactNameInput(e.target.value)}
-                            />
+                            {selectedCompany && selectedCompany.contacts && selectedCompany.contacts.length > 1 ? (
+                                <Autocomplete
+                                    options={selectedCompany.contacts}
+                                    getOptionLabel={(option) => option.name || ''}
+                                    value={selectedContact}
+                                    onChange={(event, newValue) => {
+                                        setSelectedContact(newValue);
+                                        if (newValue) {
+                                            setContactNameInput(newValue.name || '');
+                                            setContactCellphoneInput(newValue.cellphone || '');
+                                            setContactEmailInput(newValue.email || '');
+                                        } else {
+                                            setContactNameInput('');
+                                            setContactCellphoneInput('');
+                                            setContactEmailInput('');
+                                        }
+                                    }}
+                                    renderInput={(params) => <TextField {...params} label="Contact Name" fullWidth />}
+                                />
+                            ) : (
+                                <TextField
+                                    label="Contact Name"
+                                    fullWidth
+                                    value={contactNameInput}
+                                    onChange={(e) => setContactNameInput(e.target.value)}
+                                />
+                            )}
                         </Grid>
                     </Grid>
                     
