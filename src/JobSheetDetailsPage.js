@@ -5,8 +5,12 @@ import { db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useParams, useNavigate } from 'react-router-dom';
 
+
 function JobSheetDetailsPage() {
+  
   const [jobSheet, setJobSheet] = useState(null);
+  
+  
   const { id } = useParams();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -17,11 +21,17 @@ function JobSheetDetailsPage() {
       const docRef = doc(db, 'jobSheets', id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setJobSheet(docSnap.data());
+        const data = docSnap.data();
+        setJobSheet(data);
+        
       }
     };
     fetchJobSheet();
   }, [id]);
+
+  
+
+  
 
   if (!jobSheet) {
     return <Typography>Loading...</Typography>;
@@ -124,6 +134,8 @@ function JobSheetDetailsPage() {
             </Grid>
           </Grid>
 
+          
+
           <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
           <TextField
@@ -211,6 +223,7 @@ function JobSheetDetailsPage() {
           </Grid>
         </form>
       </Paper>
+      
     </Container>
   );
 }

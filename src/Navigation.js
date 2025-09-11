@@ -17,6 +17,7 @@ import CompanyProfilePage from './CompanyProfilePage';
 import JobSheetDetailsPage from './JobSheetDetailsPage';
 import EditCompanyProfilePage from './EditCompanyProfilePage';
 import ProfilePage from './ProfilePage';
+import EditJobSheetPage from './EditJobSheetPage';
 import { lightTheme, darkTheme } from './theme';
 import { AuthContext, ThemeContext } from './App';
 
@@ -109,6 +110,7 @@ function Navigation() {
         <Route path="/company-profiles/edit/:id" element={user ? <EditCompanyProfilePage /> : <Navigate to="/login" />} />
         <Route path="/company-profiles/:id" element={user ? <CompanyProfilePage /> : <Navigate to="/login" />} />
         <Route path="/job-sheet/:id" element={user ? <JobSheetDetailsPage /> : <Navigate to="/login" />} />
+        <Route path="/job-sheet/edit/:id" element={user ? <EditJobSheetPage /> : <Navigate to="/login" />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
     </ThemeProvider>
