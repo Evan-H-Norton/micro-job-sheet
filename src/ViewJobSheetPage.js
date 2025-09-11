@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { FlashOn } from '@mui/icons-material';
-
+import { AuthContext } from './App';
 
 function ViewJobSheetPage() {
-  
+  const { user } = useContext(AuthContext);
   const [jobSheets, setJobSheets] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
@@ -78,7 +78,11 @@ function ViewJobSheetPage() {
       sheet.orderNumber.toString().includes(searchTerm) ||
       sheet.technicianName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return searchTermMatch;
+    if (user && user.displayName) {
+      return searchTermMatch && sheet.technicianName === user.displayName && sheet.status === 'Open';
+    } else {
+      return searchTermMatch && sheet.status === 'Pending Invoice';
+    }
   });
 
   return (
@@ -148,7 +152,7 @@ function ViewJobSheetPage() {
           >
             <MenuItem value="Open">Open</MenuItem>
             <MenuItem value="Pending Invoice">Pending Invoice</MenuItem>
-            <MenuItem value="Invoiced">Invoiced</MenuItem>
+            {user && !user.displayName && <MenuItem value="Invoiced">Invoiced</MenuItem>}
           </TextField>
         </DialogContent>
         <DialogActions>
