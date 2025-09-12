@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery } from '@mui/material';
+import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
@@ -29,6 +29,25 @@ function NewJobSheetPage() {
     const [signatureTarget, setSignatureTarget] = useState(null);
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
+    const [outstanding, setOutstanding] = useState('');
+
+    const taskNames = [
+        'Client Logbook Check',
+        'OS S/P(s) Update',
+        'AS S/P(s) Update',
+        'Sys *.tmp cleanup (All)',
+        'Anti-Virus Update',
+        'Data Backup Check',
+        'Internet/Mail Check',
+        'NAS - Check / Update',
+        'Unifi - Check / Update',
+    ];
+
+    const [tasks, setTasks] = useState(taskNames.map(task => ({
+        task,
+        notes: '',
+        check: '',
+    })));
 
     const { user } = useContext(AuthContext);
 
@@ -190,6 +209,8 @@ function NewJobSheetPage() {
             faultComplaint, arrivalTime, departureTime, totalTime,
             workCarriedOut, technicianName, technicianSignature, customerSignature,
             status: 'Open', createdAt: new Date(),
+            tasks,
+            outstanding,
         };
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
@@ -421,6 +442,71 @@ function NewJobSheetPage() {
                                 rows={4}
                                 value={workCarriedOut}
                                 onChange={(e) => setWorkCarriedOut(e.target.value)}
+                            />
+                        </>
+                    )}
+
+                    {orderType === 'S.L.A' && (
+                        <>
+                            <TableContainer component={Paper} sx={{ my: 3 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Task</TableCell>
+                                            <TableCell>Additional Notes</TableCell>
+                                            <TableCell>Check</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tasks.map((row, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{row.task}</TableCell>
+                                                <TableCell>
+                                                    <TextField
+                                                        value={row.notes}
+                                                        onChange={(e) => {
+                                                            const newTasks = [...tasks];
+                                                            newTasks[index].notes = e.target.value;
+                                                            setTasks(newTasks);
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <FormControl fullWidth>
+                                                        <InputLabel id={`check-label-${index}`}>Check</InputLabel>
+                                                        <Select
+                                                            labelId={`check-label-${index}`}
+                                                            id={`check-select-${index}`}
+                                                            value={row.check}
+                                                            label="Check"
+                                                            onChange={(e) => {
+                                                                const newTasks = [...tasks];
+                                                                newTasks[index].check = e.target.value;
+                                                                setTasks(newTasks);
+                                                            }}
+                                                        >
+                                                            <MenuItem value="Yes">Yes</MenuItem>
+                                                            <MenuItem value="No">No</MenuItem>
+                                                            <MenuItem value="Verify">Verify</MenuItem>
+                                                        </Select>
+                                                    </FormControl>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+
+                            <TextField
+                                id="outstanding"
+                                label="Outstanding"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={outstanding}
+                                onChange={(e) => setOutstanding(e.target.value)}
+                                sx={{ mt: 2 }}
                             />
                         </>
                     )}
