@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel } from '@mui/material';
+import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography } from '@mui/material';
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,8 @@ function ViewJobSheetPage() {
   const [selectedSheet, setSelectedSheet] = useState(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
-  
+  const [invoicedJobSheets, setInvoicedJobSheets] = useState([]);
+
   const navigate = useNavigate();
 
     useEffect(() => {
@@ -26,6 +27,11 @@ function ViewJobSheetPage() {
     };
     fetchJobSheets();
   }, []);
+
+  useEffect(() => {
+    const filteredInvoiced = jobSheets.filter(sheet => sheet.status === 'Invoiced');
+    setInvoicedJobSheets(filteredInvoiced);
+  }, [jobSheets]);
 
   const handleMenuClick = (event, sheet) => {
     setAnchorEl(event.currentTarget);
@@ -70,7 +76,7 @@ function ViewJobSheetPage() {
     const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
     try {
       await updateDoc(jobSheetRef, { status: newStatus });
-      const updatedJobSheets = jobSheets.map(sheet => 
+      const updatedJobSheets = jobSheets.map(sheet =>
         sheet.id === selectedSheet.id ? { ...sheet, status: newStatus } : sheet
       );
       setJobSheets(updatedJobSheets);
@@ -90,7 +96,7 @@ function ViewJobSheetPage() {
   };
 
   const filteredJobSheets = jobSheets.filter(sheet => {
-    const searchTermMatch = 
+    const searchTermMatch =
       (sheet.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (sheet.jobNumber?.toString() || '').includes(searchTerm) ||
       (sheet.orderNumber?.toString() || '').includes(searchTerm) ||
@@ -107,7 +113,7 @@ function ViewJobSheetPage() {
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
         <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
-        
+
       </Box>
       <TextField
         id="search"
@@ -117,6 +123,9 @@ function ViewJobSheetPage() {
         margin="normal"
         onChange={(e) => setSearchTerm(e.target.value)}
       />
+      <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+        {user?.displayName ? 'Open Jobs' : 'Pending Invoice Jobs'}
+      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -149,6 +158,47 @@ function ViewJobSheetPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {!user?.displayName && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
+            Invoiced Jobs
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Job Number</TableCell>
+                  <TableCell>Order Number</TableCell>
+                  <TableCell>Company Name</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Technician</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {invoicedJobSheets.map((sheet) => (
+                  <TableRow key={sheet.id}>
+                    <TableCell>{sheet.jobNumber}</TableCell>
+                    <TableCell>{sheet.orderNumber}</TableCell>
+                    <TableCell>{sheet.companyName}</TableCell>
+                    <TableCell>{formatDate(sheet.date)}</TableCell>
+                    <TableCell>{sheet.technicianName}</TableCell>
+                    <TableCell>{sheet.status}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={(e) => handleMenuClick(e, sheet)}>
+                        <FlashOn />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
