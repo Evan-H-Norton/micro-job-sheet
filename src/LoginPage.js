@@ -40,6 +40,7 @@ function LoginPage() {
             Login
           </Typography>
           <TextField
+            id="email"
             label="Email"
             type="email"
             fullWidth
@@ -48,6 +49,7 @@ function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
           <TextField
+            id="password"
             label="Password"
             type="password"
             fullWidth

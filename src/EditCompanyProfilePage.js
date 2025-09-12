@@ -69,6 +69,7 @@ function EditCompanyProfilePage() {
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
+          id="companyName"
           label="Company Name"
           fullWidth
           margin="normal"
@@ -76,6 +77,7 @@ function EditCompanyProfilePage() {
           onChange={(e) => setCompanyName(e.target.value)}
         />
         <TextField
+          id="companyAddress"
           label="Company Address"
           fullWidth
           margin="normal"
@@ -83,6 +85,7 @@ function EditCompanyProfilePage() {
           onChange={(e) => setCompanyAddress(e.target.value)}
         />
         <TextField
+          id="companyTelephone"
           label="Company Telephone"
           fullWidth
           margin="normal"
@@ -95,6 +98,7 @@ function EditCompanyProfilePage() {
         {contacts.map((contact, index) => (
           <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <TextField
+              id={`contact-name-${index}`}
               label="Name"
               name="name"
               value={contact.name}
@@ -102,6 +106,7 @@ function EditCompanyProfilePage() {
               sx={{ mr: 1 }}
             />
             <TextField
+              id={`contact-email-${index}`}
               label="Email"
               name="email"
               type="email"
@@ -110,6 +115,7 @@ function EditCompanyProfilePage() {
               sx={{ mr: 1 }}
             />
             <TextField
+              id={`contact-cellphone-${index}`}
               label="Cellphone"
               name="cellphone"
               value={contact.cellphone}

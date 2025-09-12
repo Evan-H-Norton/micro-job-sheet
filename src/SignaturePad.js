@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import SignaturePad from 'react-signature-pad-wrapper';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button, IconButton, Box } from '@mui/material';
-
 import CloseIcon from '@mui/icons-material/Close';
+import toast from 'react-hot-toast';
 
 const SignaturePadWrapper = ({ onSave, onClose }) => {
   const signaturePadRef = useRef(null);
@@ -38,7 +38,7 @@ const SignaturePadWrapper = ({ onSave, onClose }) => {
 
   const handleSave = () => {
     if (signaturePadRef.current.isEmpty()) {
-      alert('Please provide a signature first.');
+      toast.error('Please provide a signature first.');
     } else {
       const dataURL = signaturePadRef.current.toDataURL('image/png');
       onSave(dataURL);

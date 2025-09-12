@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel } from '@mui/material';
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -37,27 +37,36 @@ function ViewJobSheetPage() {
     setSelectedSheet(null);
   };
 
-  const handleView = () => {
-    navigate(`/job-sheet/${selectedSheet.id}`);
-    handleMenuClose();
+  const handleView = (sheet) => {
+    if (sheet) {
+      navigate(`/job-sheet/${sheet.id}`);
+      handleMenuClose();
+    }
   };
 
-  const handleEdit = () => {
-    navigate(`/job-sheet/edit/${selectedSheet.id}`);
-    handleMenuClose();
+  const handleEdit = (sheet) => {
+    if (sheet) {
+      navigate(`/job-sheet/edit/${sheet.id}`);
+      handleMenuClose();
+    }
   };
 
-  const handleUpdateStatus = () => {
-    setNewStatus(selectedSheet.status);
-    setStatusDialogOpen(true);
-    handleMenuClose();
+  const handleUpdateStatus = (sheet) => {
+    if (sheet) {
+      setNewStatus(sheet.status);
+      setSelectedSheet(sheet);
+      setStatusDialogOpen(true);
+      setAnchorEl(null);
+    }
   };
 
   const handleStatusDialogClose = () => {
     setStatusDialogOpen(false);
+    setSelectedSheet(null);
   };
 
   const handleStatusSave = async () => {
+    if (!selectedSheet) return;
     const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
     try {
       await updateDoc(jobSheetRef, { status: newStatus });
@@ -82,10 +91,10 @@ function ViewJobSheetPage() {
 
   const filteredJobSheets = jobSheets.filter(sheet => {
     const searchTermMatch = 
-      sheet.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sheet.jobNumber.toString().includes(searchTerm) ||
-      sheet.orderNumber.toString().includes(searchTerm) ||
-      sheet.technicianName.toLowerCase().includes(searchTerm.toLowerCase());
+      (sheet.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (sheet.jobNumber?.toString() || '').includes(searchTerm) ||
+      (sheet.orderNumber?.toString() || '').includes(searchTerm) ||
+      (sheet.technicianName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     if (user && user.displayName) {
       return searchTermMatch && sheet.technicianName === user.displayName && sheet.status === 'Open';
@@ -101,6 +110,7 @@ function ViewJobSheetPage() {
         
       </Box>
       <TextField
+        id="search"
         label="Search"
         variant="outlined"
         fullWidth
@@ -144,16 +154,17 @@ function ViewJobSheetPage() {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleView}>View</MenuItem>
-        <MenuItem onClick={handleEdit}>Edit</MenuItem>
-        <MenuItem onClick={handleUpdateStatus}>Update Status</MenuItem>
+        <MenuItem onClick={() => handleView(selectedSheet)}>View</MenuItem>
+        <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>
+        <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>
       </Menu>
       <Dialog open={statusDialogOpen} onClose={handleStatusDialogClose}>
         <DialogTitle>Update Status</DialogTitle>
         <DialogContent>
-          <TextField
-            select
-            label="Status"
+          <InputLabel id="status-select-label">Status</InputLabel>
+          <Select
+            labelId="status-select-label"
+            id="status-select"
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
             fullWidth
@@ -162,7 +173,7 @@ function ViewJobSheetPage() {
             <MenuItem value="Open">Open</MenuItem>
             <MenuItem value="Pending Invoice">Pending Invoice</MenuItem>
             {user && !user.displayName && <MenuItem value="Invoiced">Invoiced</MenuItem>}
-          </TextField>
+          </Select>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleStatusDialogClose}>Cancel</Button>

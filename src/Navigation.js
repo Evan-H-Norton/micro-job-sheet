@@ -20,6 +20,7 @@ import ProfilePage from './ProfilePage';
 import EditJobSheetPage from './EditJobSheetPage';
 import { lightTheme, darkTheme } from './theme';
 import { AuthContext, ThemeContext } from './App';
+import { Toaster } from 'react-hot-toast';
 
 function Navigation() {
   const { user } = useContext(AuthContext);
@@ -49,6 +50,14 @@ function Navigation() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Toaster
+        toastOptions={{
+          style: {
+            background: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+          },
+        }}
+      />
       <AppBar position="static">
         <Toolbar>
           <IconButton

@@ -4,6 +4,7 @@ import { AuthContext } from './App';
 import { reauthenticateWithCredential, EmailAuthProvider, updatePassword, updateProfile } from 'firebase/auth';
 import { auth } from './firebase';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function ProfilePage() {
   const { user } = useContext(AuthContext);
@@ -23,12 +24,18 @@ function ProfilePage() {
   }, [user]);
 
   const handleUpdateProfile = async () => {
-    try {
-      await updateProfile(auth.currentUser, { displayName: technicianName });
-      alert('Profile updated successfully!');
-    } catch (error) {
-      setError(error.message);
-    }
+    const promise = updateProfile(auth.currentUser, { displayName: technicianName });
+    toast.promise(promise, {
+      loading: 'Updating profile...',
+      success: () => {
+        navigate(-1);
+        return 'Profile updated successfully!';
+      },
+      error: (err) => {
+        setError(err.message);
+        return 'Failed to update profile.';
+      },
+    });
   };
 
   const handleChangePassword = async (e) => {
@@ -37,19 +44,26 @@ function ProfilePage() {
 
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
-    try {
-      const user = auth.currentUser;
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, newPassword);
-      setShowChangePassword(false);
-      alert('Password changed successfully!');
-    } catch (error) {
-      setError(error.message);
-    }
+    const promise = reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(user.email, currentPassword))
+      .then(() => {
+        return updatePassword(auth.currentUser, newPassword);
+      });
+
+    toast.promise(promise, {
+      loading: 'Changing password...',
+      success: () => {
+        setShowChangePassword(false);
+        return 'Password changed successfully!';
+      },
+      error: (err) => {
+        setError(err.message);
+        return 'Failed to change password.';
+      },
+    });
   };
 
   return (
@@ -62,12 +76,14 @@ function ProfilePage() {
         {user ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
+              id="email"
               label="Email"
               fullWidth
               value={user.email}
               InputProps={{ readOnly: true }}
             />
             <TextField
+              id="technician-name"
               label="Technician Name"
               fullWidth
               value={technicianName}
@@ -82,6 +98,7 @@ function ProfilePage() {
             {showChangePassword && (
               <Box component="form" onSubmit={handleChangePassword} sx={{ mt: 2 }}>
                 <TextField
+                  id="current-password"
                   type="password"
                   label="Current Password"
                   fullWidth
@@ -90,6 +107,7 @@ function ProfilePage() {
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
                 <TextField
+                  id="new-password"
                   type="password"
                   label="New Password"
                   fullWidth
@@ -98,6 +116,7 @@ function ProfilePage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
                 <TextField
+                  id="confirm-new-password"
                   type="password"
                   label="Confirm New Password"
                   fullWidth

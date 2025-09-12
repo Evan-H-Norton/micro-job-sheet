@@ -6,6 +6,7 @@ import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from './App';
 import SignaturePadWrapper from './SignaturePad';
+import toast from 'react-hot-toast';
 
 function EditJobSheetPage() {
     const { id } = useParams();
@@ -26,9 +27,8 @@ function EditJobSheetPage() {
     const [showSignaturePad, setShowSignaturePad] = useState(false);
     const [signatureTarget, setSignatureTarget] = useState(null);
     const [customerName, setCustomerName] = useState('');
-        const [customerSignature, setCustomerSignature] = useState(null);
+    const [customerSignature, setCustomerSignature] = useState(null);
     
-
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
@@ -179,14 +179,16 @@ function EditJobSheetPage() {
             customerSignature,
         };
 
-        try {
-            await updateDoc(jobSheetRef, jobSheetData);
-            alert('Job Sheet updated successfully!');
-            navigate('/view-job-sheet');
-        } catch (error) {
-            console.error("Error updating job sheet: ", error);
-            alert('Failed to update job sheet. Please try again.');
-        }
+        const promise = updateDoc(jobSheetRef, jobSheetData);
+
+        toast.promise(promise, {
+            loading: 'Updating job sheet...',
+            success: () => {
+                navigate(`/job-sheet/${id}`, { replace: true });
+                return 'Job Sheet updated successfully!';
+            },
+            error: 'Failed to update job sheet. Please try again.',
+        });
     };
 
     return (
@@ -200,6 +202,7 @@ function EditJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap">
                         <Grid item width="33.333%">
                             <TextField
+                                id="job-number"
                                 label={isSmallScreen ? "Job #" : "Job Number"}
                                 value={jobNumber}
                                 InputProps={{ readOnly: true }}
@@ -208,6 +211,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="order-number"
                                 label={isSmallScreen ? "Order #" : "Order Number"}
                                 value={orderNumber}
                                 InputProps={{ readOnly: true }}
@@ -216,6 +220,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="date"
                                 label="Date"
                                 type="date"
                                 value={date}
@@ -263,6 +268,7 @@ function EditJobSheetPage() {
                                 />
                             ) : (
                                 <TextField
+                                    id="contact-name"
                                     label="Contact Name"
                                     fullWidth
                                     value={contactNameInput}
@@ -275,6 +281,7 @@ function EditJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="50%">
                             <TextField
+                                id="contact-cellphone"
                                 label="Contact Cellphone"
                                 fullWidth
                                 value={contactCellphoneInput}
@@ -283,6 +290,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="50%">
                             <TextField
+                                id="contact-email"
                                 label="Contact Email"
                                 type="email"
                                 fullWidth
@@ -295,6 +303,7 @@ function EditJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="50%">
                             <TextField
+                                id="company-address"
                                 label="Company Address"
                                 fullWidth
                                 value={companyAddress}
@@ -303,6 +312,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="50%">
                             <TextField
+                                id="company-telephone"
                                 label="Company Telephone"
                                 fullWidth
                                 value={companyTelephone}
@@ -316,6 +326,7 @@ function EditJobSheetPage() {
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
                     <TextField
+                        id="fault-complaint"
                         label="Fault / Complaint"
                         fullWidth
                         multiline
@@ -327,6 +338,7 @@ function EditJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="33.333%">
                             <TextField
+                                id="arrival-time"
                                 label="Arrival Time"
                                 type="time"
                                 fullWidth
@@ -337,6 +349,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="departure-time"
                                 label="Departure Time"
                                 type="time"
                                 fullWidth
@@ -348,6 +361,7 @@ function EditJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="total-time"
                                 label="Total Time"
                                 fullWidth
                                 value={totalTime}
@@ -357,6 +371,7 @@ function EditJobSheetPage() {
                     </Grid>
 
                     <TextField
+                        id="work-carried-out"
                         label="Work Carried Out"
                         fullWidth
                         sx={{ mt: 2 }}
@@ -371,6 +386,7 @@ function EditJobSheetPage() {
                     <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                id="technician-name"
                                 label="Technician Name"
                                 fullWidth
                                 value={technicianName}
@@ -413,6 +429,7 @@ function EditJobSheetPage() {
                     <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                id="customer-name"
                                 label="Customer Name"
                                 fullWidth
                                 value={customerName}

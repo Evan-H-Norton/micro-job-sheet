@@ -6,6 +6,7 @@ import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'fir
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './App';
 import SignaturePadWrapper from './SignaturePad';
+import toast from 'react-hot-toast';
 
 function NewJobSheetPage() {
     const [companies, setCompanies] = useState([]);
@@ -25,7 +26,7 @@ function NewJobSheetPage() {
     const [showSignaturePad, setShowSignaturePad] = useState(false);
     const [signatureTarget, setSignatureTarget] = useState(null);
     const [customerName, setCustomerName] = useState('');
-        const [customerSignature, setCustomerSignature] = useState(null);
+    const [customerSignature, setCustomerSignature] = useState(null);
 
     const { user } = useContext(AuthContext);
 
@@ -135,7 +136,7 @@ function NewJobSheetPage() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!companyNameInput) {
-            alert('Please enter a company name.');
+            toast.error('Please enter a company name.');
             return;
         }
 
@@ -191,21 +192,23 @@ function NewJobSheetPage() {
             status: 'Open', createdAt: new Date(),
         };
         
-        try {
-            await addDoc(collection(db, 'jobSheets'), jobSheetData);
-
-            const countersRef = doc(db, 'counters', 'jobOrder');
-            await updateDoc(countersRef, {
-                lastJobNumber: jobNumber,
-                lastOrderNumber: orderNumber,
+        const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
+            .then(() => {
+                const countersRef = doc(db, 'counters', 'jobOrder');
+                return updateDoc(countersRef, {
+                    lastJobNumber: jobNumber,
+                    lastOrderNumber: orderNumber,
+                });
             });
-            
-            alert('Job Sheet created successfully!');
-            navigate('/');
-        } catch (error) {
-            console.error("Error creating job sheet: ", error);
-            alert('Failed to create job sheet. Please try again.');
-        }
+
+        toast.promise(promise, {
+            loading: 'Creating job sheet...',
+            success: () => {
+                navigate('/');
+                return 'Job Sheet created successfully!';
+            },
+            error: 'Failed to create job sheet. Please try again.',
+        });
     };
 
     return (
@@ -219,6 +222,7 @@ function NewJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap">
                         <Grid item width="33.333%">
                             <TextField
+                                id="job-number"
                                 label={isSmallScreen ? "Job #" : "Job Number"}
                                 value={jobNumber}
                                 InputProps={{ readOnly: true }}
@@ -227,6 +231,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="order-number"
                                 label={isSmallScreen ? "Order #" : "Order Number"}
                                 value={orderNumber}
                                 InputProps={{ readOnly: true }}
@@ -235,6 +240,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="date"
                                 label="Date"
                                 type="date"
                                 value={date}
@@ -282,6 +288,7 @@ function NewJobSheetPage() {
                                 />
                             ) : (
                                 <TextField
+                                    id="contact-name"
                                     label="Contact Name"
                                     fullWidth
                                     value={contactNameInput}
@@ -294,6 +301,7 @@ function NewJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="50%">
                             <TextField
+                                id="contact-cellphone"
                                 label="Contact Cellphone"
                                 fullWidth
                                 value={contactCellphoneInput}
@@ -302,6 +310,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="50%">
                             <TextField
+                                id="contact-email"
                                 label="Contact Email"
                                 type="email"
                                 fullWidth
@@ -314,6 +323,7 @@ function NewJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="50%">
                             <TextField
+                                id="company-address"
                                 label="Company Address"
                                 fullWidth
                                 value={companyAddress}
@@ -322,6 +332,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="50%">
                             <TextField
+                                id="company-telephone"
                                 label="Company Telephone"
                                 fullWidth
                                 value={companyTelephone}
@@ -333,6 +344,7 @@ function NewJobSheetPage() {
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
                     <TextField
+                        id="fault-complaint"
                         label="Fault / Complaint"
                         fullWidth
                         multiline
@@ -344,6 +356,7 @@ function NewJobSheetPage() {
                     <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
                         <Grid item width="33.333%">
                             <TextField
+                                id="arrival-time"
                                 label="Arrival Time"
                                 type="time"
                                 fullWidth
@@ -354,6 +367,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="departure-time"
                                 label="Departure Time"
                                 type="time"
                                 fullWidth
@@ -365,6 +379,7 @@ function NewJobSheetPage() {
                         </Grid>
                         <Grid item width="33.333%">
                             <TextField
+                                id="total-time"
                                 label="Total Time"
                                 fullWidth
                                 value={totalTime}
@@ -374,6 +389,7 @@ function NewJobSheetPage() {
                     </Grid>
 
                     <TextField
+                        id="work-carried-out"
                         label="Work Carried Out"
                         fullWidth
                         sx={{ mt: 2 }}
@@ -388,6 +404,7 @@ function NewJobSheetPage() {
                     <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                id="technician-name"
                                 label="Technician Name"
                                 fullWidth
                                 value={technicianName}
@@ -430,6 +447,7 @@ function NewJobSheetPage() {
                     <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         <Grid item xs={12} sm={6}>
                             <TextField
+                                id="customer-name"
                                 label="Customer Name"
                                 fullWidth
                                 value={customerName}
