@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
@@ -9,6 +9,7 @@ import SignaturePadWrapper from './SignaturePad';
 import toast from 'react-hot-toast';
 
 function NewJobSheetPage() {
+    const orderTypeInputRef = useRef(null);
     const [companies, setCompanies] = useState([]);
     const [companyNameInput, setCompanyNameInput] = useState('');
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -234,6 +235,9 @@ function NewJobSheetPage() {
                                 onChange={(event, newValue) => {
                                     setOrderType(newValue);
                                     setOrderValue('');
+                                    if (newValue === 'S.L.A') {
+                                        orderTypeInputRef.current.blur();
+                                    }
                                 }}
                                 onInputChange={(event, newInputValue, reason) => {
                                     if (reason === 'input' && orderType === 'Order #') {
@@ -245,6 +249,7 @@ function NewJobSheetPage() {
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
+                                        inputRef={orderTypeInputRef}
                                         label={orderType || 'Order Type'}
                                         InputProps={{
                                             ...params.InputProps,
