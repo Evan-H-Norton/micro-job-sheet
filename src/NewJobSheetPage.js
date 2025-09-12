@@ -218,7 +218,7 @@ function NewJobSheetPage() {
                 </Typography>
                 <form onSubmit={handleSubmit}>
                     <Grid container display="flex" gap={2} flexWrap="nowrap">
-                        <Grid item width="33.333%">
+                        <Grid item width={isSmallScreen && !orderType ? '25%' : '33.333%'}>
                             <TextField
                                 id="job-number"
                                 label={isSmallScreen ? "Job #" : "Job Number"}
@@ -227,7 +227,7 @@ function NewJobSheetPage() {
                                 fullWidth
                             />
                         </Grid>
-                        <Grid item width="33.333%">
+                        <Grid item width={isSmallScreen && !orderType ? '41.666%' : '33.333%'}>
                             <Autocomplete
                                 options={['Order #', 'S.L.A']}
                                 value={orderType}
@@ -360,61 +360,65 @@ function NewJobSheetPage() {
 
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                    <TextField
-                        id="fault-complaint"
-                        label="Fault / Complaint"
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={faultComplaint}
-                        onChange={(e) => setFaultComplaint(e.target.value)}
-                    />
+                    {orderType !== 'S.L.A' && (
+                        <>
+                            <TextField
+                                id="fault-complaint"
+                                label="Fault / Complaint"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={faultComplaint}
+                                onChange={(e) => setFaultComplaint(e.target.value)}
+                            />
 
-                    <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="arrival-time"
-                                label="Arrival Time"
-                                type="time"
-                                fullWidth
-                                value={arrivalTime}
-                                onChange={(e) => setArrivalTime(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="departure-time"
-                                label="Departure Time"
-                                type="time"
-                                fullWidth
-                                value={departureTime}
-                                onChange={(e) => setDepartureTime(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                                inputProps={{ min: arrivalTime }}
-                            />
-                        </Grid>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="total-time"
-                                label="Total Time"
-                                fullWidth
-                                value={totalTime}
-                                InputProps={{ readOnly: true }}
-                            />
-                        </Grid>
-                    </Grid>
+                            <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="arrival-time"
+                                        label="Arrival Time"
+                                        type="time"
+                                        fullWidth
+                                        value={arrivalTime}
+                                        onChange={(e) => setArrivalTime(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                    />
+                                </Grid>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="departure-time"
+                                        label="Departure Time"
+                                        type="time"
+                                        fullWidth
+                                        value={departureTime}
+                                        onChange={(e) => setDepartureTime(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                        inputProps={{ min: arrivalTime }}
+                                    />
+                                </Grid>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="total-time"
+                                        label="Total Time"
+                                        fullWidth
+                                        value={totalTime}
+                                        InputProps={{ readOnly: true }}
+                                    />
+                                </Grid>
+                            </Grid>
 
-                    <TextField
-                        id="work-carried-out"
-                        label="Work Carried Out"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        multiline
-                        rows={4}
-                        value={workCarriedOut}
-                        onChange={(e) => setWorkCarriedOut(e.target.value)}
-                    />
+                            <TextField
+                                id="work-carried-out"
+                                label="Work Carried Out"
+                                fullWidth
+                                sx={{ mt: 2 }}
+                                multiline
+                                rows={4}
+                                value={workCarriedOut}
+                                onChange={(e) => setWorkCarriedOut(e.target.value)}
+                            />
+                        </>
+                    )}
 
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
