@@ -14,7 +14,8 @@ function NewJobSheetPage() {
     const [selectedCompany, setSelectedCompany] = useState(null);
 
     const [jobNumber, setJobNumber] = useState('');
-    const [orderNumber, setOrderNumber] = useState('');
+    const [orderType, setOrderType] = useState(null);
+    const [orderValue, setOrderValue] = useState('');
     const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
     const [faultComplaint, setFaultComplaint] = useState('');
     const [arrivalTime, setArrivalTime] = useState('');
@@ -60,11 +61,9 @@ function NewJobSheetPage() {
             if (countersSnap.exists()) {
                 const data = countersSnap.data();
                 setJobNumber(data.lastJobNumber + 1);
-                setOrderNumber(data.lastOrderNumber + 1);
             } else {
-                await setDoc(countersRef, { lastJobNumber: 0, lastOrderNumber: 0 });
+                await setDoc(countersRef, { lastJobNumber: 0 });
                 setJobNumber(1);
-                setOrderNumber(1);
             }
         };
         fetchNumbers();
@@ -184,7 +183,7 @@ function NewJobSheetPage() {
         }
 
         const jobSheetData = {
-            jobNumber, orderNumber, date, companyId: finalCompanyId,
+            jobNumber, orderType, orderValue, date, companyId: finalCompanyId,
             companyName: companyNameInput, companyAddress: companyAddress,
             companyTelephone: companyTelephone, contact: newContact,
             faultComplaint, arrivalTime, departureTime, totalTime,
@@ -197,7 +196,6 @@ function NewJobSheetPage() {
                 const countersRef = doc(db, 'counters', 'jobOrder');
                 return updateDoc(countersRef, {
                     lastJobNumber: jobNumber,
-                    lastOrderNumber: orderNumber,
                 });
             });
 
@@ -230,11 +228,30 @@ function NewJobSheetPage() {
                             />
                         </Grid>
                         <Grid item width="33.333%">
-                            <TextField
-                                id="order-number"
-                                label={isSmallScreen ? "Order #" : "Order Number"}
-                                value={orderNumber}
-                                InputProps={{ readOnly: true }}
+                            <Autocomplete
+                                options={['Order #', 'S.L.A']}
+                                value={orderType}
+                                onChange={(event, newValue) => {
+                                    setOrderType(newValue);
+                                    setOrderValue('');
+                                }}
+                                onInputChange={(event, newInputValue, reason) => {
+                                    if (reason === 'input' && orderType === 'Order #') {
+                                        setOrderValue(newInputValue);
+                                    }
+                                }}
+                                inputValue={orderValue}
+                                freeSolo
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label={orderType || 'Order Type'}
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            readOnly: orderType === 'S.L.A',
+                                        }}
+                                    />
+                                )}
                                 fullWidth
                             />
                         </Grid>
