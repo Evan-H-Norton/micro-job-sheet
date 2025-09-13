@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography } from '@mui/material';
 import { db } from './firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { FlashOn } from '@mui/icons-material';
 import { AuthContext } from './App';
@@ -15,6 +15,7 @@ function ViewJobSheetPage() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [invoicedJobSheets, setInvoicedJobSheets] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -66,6 +67,12 @@ function ViewJobSheetPage() {
     }
   };
 
+  const handleDeleteClick = (sheet) => {
+    setSelectedSheet(sheet);
+    setDeleteDialogOpen(true);
+    setAnchorEl(null);
+  };
+
   const handleStatusDialogClose = () => {
     setStatusDialogOpen(false);
     setSelectedSheet(null);
@@ -83,6 +90,20 @@ function ViewJobSheetPage() {
       handleStatusDialogClose();
     } catch (error) {
       console.error("Error updating status: ", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedSheet) return;
+    const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
+    try {
+      await deleteDoc(jobSheetRef);
+      const updatedJobSheets = jobSheets.filter(sheet => sheet.id !== selectedSheet.id);
+      setJobSheets(updatedJobSheets);
+      setDeleteDialogOpen(false);
+      setSelectedSheet(null);
+    } catch (error) {
+      console.error("Error deleting document: ", error);
     }
   };
 
@@ -205,8 +226,9 @@ function ViewJobSheetPage() {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => handleView(selectedSheet)}>View</MenuItem>
-        <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>
-        <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>
+                {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>}
+        {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>}
+                {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleDeleteClick(selectedSheet)} sx={{ color: 'error.main' }}>Delete</MenuItem>}
       </Menu>
       <Dialog open={statusDialogOpen} onClose={handleStatusDialogClose}>
         <DialogTitle>Update Status</DialogTitle>
@@ -228,6 +250,20 @@ function ViewJobSheetPage() {
         <DialogActions>
           <Button onClick={handleStatusDialogClose}>Cancel</Button>
           <Button onClick={handleStatusSave}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Job Sheet</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this job sheet?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDelete} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
     </Container>
