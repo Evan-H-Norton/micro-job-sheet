@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, TextField, Grid, Divider, Paper, useMediaQuery, Button, Box } from '@mui/material';
+import { Typography, Container, TextField, Grid, Divider, Paper, useMediaQuery, Button, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -58,12 +58,22 @@ function JobSheetDetailsPage() {
             </Grid>
             <Grid item width="33.333%">
               <TextField
-                label={isSmallScreen ? "Order #" : "Order Number"}
-                value={jobSheet.orderNumber}
+                label="Order Type"
+                value={jobSheet.orderType}
                 InputProps={{ readOnly: true }}
                 fullWidth
               />
             </Grid>
+            {jobSheet.orderType === 'Order #' && jobSheet.orderNumber &&
+              <Grid item width="33.333%">
+                <TextField
+                  label={isSmallScreen ? "Order #" : "Order Number"}
+                  value={jobSheet.orderNumber}
+                  InputProps={{ readOnly: true }}
+                  fullWidth
+                />
+              </Grid>
+            }
             <Grid item width="33.333%">
               <TextField
                 label="Date"
@@ -138,55 +148,93 @@ function JobSheetDetailsPage() {
 
           <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-          <TextField
-              label="Fault / Complaint"
-              fullWidth
-              multiline
-              rows={4}
-              value={jobSheet.faultComplaint}
-              InputProps={{ readOnly: true }}
-          />
+          {jobSheet.orderType === 'Order #' ? (
+            <>
+              <TextField
+                  label="Fault / Complaint"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={jobSheet.faultComplaint}
+                  InputProps={{ readOnly: true }}
+              />
 
-          <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-              <Grid item width="33.333%">
-                  <TextField
-                      label="Arrival Time"
-                      type="time"
-                      fullWidth
-                      value={jobSheet.arrivalTime}
-                      InputLabelProps={{ shrink: true }}
-                      InputProps={{ readOnly: true }}
-                  />
+              <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                  <Grid item width="33.333%">
+                      <TextField
+                          label="Arrival Time"
+                          type="time"
+                          fullWidth
+                          value={jobSheet.arrivalTime}
+                          InputLabelProps={{ shrink: true }}
+                          InputProps={{ readOnly: true }}
+                      />
+                  </Grid>
+                  <Grid item width="33.333%">
+                      <TextField
+                          label="Departure Time"
+                          type="time"
+                          fullWidth
+                          value={jobSheet.departureTime}
+                          InputLabelProps={{ shrink: true }}
+                          InputProps={{ readOnly: true }}
+                      />
+                  </Grid>
+                  <Grid item width="33.333%">
+                      <TextField
+                          label="Total Time"
+                          fullWidth
+                          value={jobSheet.totalTime}
+                          InputProps={{ readOnly: true }}
+                      />
+                  </Grid>
               </Grid>
-              <Grid item width="33.333%">
-                  <TextField
-                      label="Departure Time"
-                      type="time"
-                      fullWidth
-                      value={jobSheet.departureTime}
-                      InputLabelProps={{ shrink: true }}
-                      InputProps={{ readOnly: true }}
-                  />
-              </Grid>
-              <Grid item width="33.333%">
-                  <TextField
-                      label="Total Time"
-                      fullWidth
-                      value={jobSheet.totalTime}
-                      InputProps={{ readOnly: true }}
-                  />
-              </Grid>
-          </Grid>
 
-          <TextField
-              label="Work Carried Out"
-              fullWidth
-              sx={{ mt: 2 }}
-              multiline
-              rows={4}
-              value={jobSheet.workCarriedOut}
-              InputProps={{ readOnly: true }}
-          />
+              <TextField
+                  label="Work Carried Out"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  multiline
+                  rows={4}
+                  value={jobSheet.workCarriedOut}
+                  InputProps={{ readOnly: true }}
+              />
+            </>
+          ) : (
+            <>
+              <TableContainer component={Paper} sx={{ my: 3 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Task</TableCell>
+                      <TableCell>Additional Notes</TableCell>
+                      <TableCell>Check</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {jobSheet.tasks.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{row.task}</TableCell>
+                        <TableCell>{row.notes}</TableCell>
+                        <TableCell>{row.check}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TextField
+                id="outstanding"
+                label="Outstanding"
+                fullWidth
+                multiline
+                rows={4}
+                value={jobSheet.outstanding}
+                InputProps={{ readOnly: true }}
+                sx={{ mt: 2 }}
+              />
+            </>
+          )}
 
           <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 

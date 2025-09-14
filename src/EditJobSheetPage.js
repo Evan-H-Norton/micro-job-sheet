@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery } from '@mui/material';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -9,13 +9,14 @@ import SignaturePadWrapper from './SignaturePad';
 import toast from 'react-hot-toast';
 
 function EditJobSheetPage() {
+    const orderTypeInputRef = useRef(null);
     const { id } = useParams();
     const [companies, setCompanies] = useState([]);
     const [companyNameInput, setCompanyNameInput] = useState('');
     const [selectedCompany, setSelectedCompany] = useState(null);
 
     const [jobNumber, setJobNumber] = useState('');
-    const [orderNumber, setOrderNumber] = useState('');
+    const [orderValue, setOrderValue] = useState('');
     const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
     const [faultComplaint, setFaultComplaint] = useState('');
     const [arrivalTime, setArrivalTime] = useState('');
@@ -28,6 +29,9 @@ function EditJobSheetPage() {
     const [signatureTarget, setSignatureTarget] = useState(null);
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
+    const [orderType, setOrderType] = useState(null);
+    const [tasks, setTasks] = useState([]);
+    const [outstanding, setOutstanding] = useState('');
     
     const { user } = useContext(AuthContext);
 
@@ -67,7 +71,7 @@ function EditJobSheetPage() {
                 setContactCellphoneInput(data.contact?.cellphone || '');
                 setContactEmailInput(data.contact?.email || '');
                 setJobNumber(data.jobNumber || '');
-                setOrderNumber(data.orderNumber || '');
+                setOrderValue(data.orderValue || '');
                 setDate(data.date || new Date().toISOString().slice(0, 10));
                 setFaultComplaint(data.faultComplaint || '');
                 setArrivalTime(data.arrivalTime || '');
@@ -78,6 +82,9 @@ function EditJobSheetPage() {
                 setTechnicianSignature(data.technicianSignature || null);
                 setCustomerName(data.customerName || '');
                 setCustomerSignature(data.customerSignature || null);
+                setOrderType(data.orderType || 'Order #');
+                setTasks(data.tasks || []);
+                setOutstanding(data.outstanding || '');
 
                 // Fetch and set the selected company
                 const companiesCollection = collection(db, 'companyProfiles');
@@ -168,6 +175,8 @@ function EditJobSheetPage() {
                 email: contactEmailInput,
             },
             date,
+            orderType,
+            orderValue,
             faultComplaint,
             arrivalTime,
             departureTime,
@@ -177,6 +186,8 @@ function EditJobSheetPage() {
             technicianSignature,
             customerName,
             customerSignature,
+            tasks,
+            outstanding,
         };
 
         const promise = updateDoc(jobSheetRef, jobSheetData);
@@ -209,12 +220,61 @@ function EditJobSheetPage() {
                                 fullWidth
                             />
                         </Grid>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="order-number"
-                                label={isSmallScreen ? "Order #" : "Order Number"}
-                                value={orderNumber}
-                                InputProps={{ readOnly: true }}
+                        <Grid item width={isSmallScreen && !orderType ? '41.666%' : '33.333%'}>
+                            <Autocomplete
+                                options={['Order #', 'S.L.A']}
+                                value={orderType}
+                                onChange={(event, newValue) => {
+                                    setOrderType(newValue);
+                                    setOrderValue('');
+                                    if (newValue === 'S.L.A') {
+                                        orderTypeInputRef.current.blur();
+                                        if (tasks.length === 0) {
+                                            const taskNames = [
+                                                'Client Logbook Check',
+                                                'OS S/P(s) Update',
+                                                'AS S/P(s) Update',
+                                                'Sys *.tmp cleanup (All)',
+                                                'Anti-Virus Update',
+                                                'Data Backup Check',
+                                                'Internet/Mail Check',
+                                                'NAS - Check / Update',
+                                                'Unifi - Check / Update',
+                                            ];
+                                            setTasks(taskNames.map(task => ({
+                                                task,
+                                                notes: '',
+                                                check: '',
+                                            })));
+                                        }
+                                        setFaultComplaint('');
+                                        setWorkCarriedOut('');
+                                        setArrivalTime('');
+                                        setDepartureTime('');
+                                        setTotalTime('');
+                                    } else if (newValue === 'Order #') {
+                                        setTasks([]);
+                                        setOutstanding('');
+                                    }
+                                }}
+                                onInputChange={(event, newInputValue, reason) => {
+                                    if (reason === 'input' && orderType === 'Order #') {
+                                        setOrderValue(newInputValue);
+                                    }
+                                }}
+                                inputValue={orderValue}
+                                freeSolo
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        inputRef={orderTypeInputRef}
+                                        label={orderType || 'Order Type'}
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            readOnly: orderType === 'S.L.A',
+                                        }}
+                                    />
+                                )}
                                 fullWidth
                             />
                         </Grid>
@@ -325,61 +385,128 @@ function EditJobSheetPage() {
 
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                    <TextField
-                        id="fault-complaint"
-                        label="Fault / Complaint"
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={faultComplaint}
-                        onChange={(e) => setFaultComplaint(e.target.value)}
-                    />
+                    {orderType === 'Order #' ? (
+                        <>
+                            <TextField
+                                id="fault-complaint"
+                                label="Fault / Complaint"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={faultComplaint}
+                                onChange={(e) => setFaultComplaint(e.target.value)}
+                            />
 
-                    <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="arrival-time"
-                                label="Arrival Time"
-                                type="time"
-                                fullWidth
-                                value={arrivalTime}
-                                onChange={(e) => setArrivalTime(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="departure-time"
-                                label="Departure Time"
-                                type="time"
-                                fullWidth
-                                value={departureTime}
-                                onChange={(e) => setDepartureTime(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                                inputProps={{ min: arrivalTime }}
-                            />
-                        </Grid>
-                        <Grid item width="33.333%">
-                            <TextField
-                                id="total-time"
-                                label="Total Time"
-                                fullWidth
-                                value={totalTime}
-                                InputProps={{ readOnly: true }}
-                            />
-                        </Grid>
-                    </Grid>
+                            <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="arrival-time"
+                                        label="Arrival Time"
+                                        type="time"
+                                        fullWidth
+                                        value={arrivalTime}
+                                        onChange={(e) => setArrivalTime(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                    />
+                                </Grid>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="departure-time"
+                                        label="Departure Time"
+                                        type="time"
+                                        fullWidth
+                                        value={departureTime}
+                                        onChange={(e) => setDepartureTime(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                        inputProps={{ min: arrivalTime }}
+                                    />
+                                </Grid>
+                                <Grid item width="33.333%">
+                                    <TextField
+                                        id="total-time"
+                                        label="Total Time"
+                                        fullWidth
+                                        value={totalTime}
+                                        InputProps={{ readOnly: true }}
+                                    />
+                                </Grid>
+                            </Grid>
 
-                    <TextField
-                        id="work-carried-out"
-                        label="Work Carried Out"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        multiline
-                        rows={4}
-                        value={workCarriedOut}
-                        onChange={(e) => setWorkCarriedOut(e.target.value)}
-                    />
+                            <TextField
+                                id="work-carried-out"
+                                label="Work Carried Out"
+                                fullWidth
+                                sx={{ mt: 2 }}
+                                multiline
+                                rows={4}
+                                value={workCarriedOut}
+                                onChange={(e) => setWorkCarriedOut(e.target.value)}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <TableContainer component={Paper} sx={{ my: 3 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Task</TableCell>
+                                            <TableCell>Additional Notes</TableCell>
+                                            <TableCell>Check</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tasks.map((row, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{row.task}</TableCell>
+                                                <TableCell>
+                                                    <TextField
+                                                        value={row.notes}
+                                                        onChange={(e) => {
+                                                            const newTasks = [...tasks];
+                                                            newTasks[index].notes = e.target.value;
+                                                            setTasks(newTasks);
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <FormControl fullWidth>
+                                                        <InputLabel id={`check-label-${index}`}>Check</InputLabel>
+                                                        <Select
+                                                            labelId={`check-label-${index}`}
+                                                            id={`check-select-${index}`}
+                                                            value={row.check}
+                                                            label="Check"
+                                                            onChange={(e) => {
+                                                                const newTasks = [...tasks];
+                                                                newTasks[index].check = e.target.value;
+                                                                setTasks(newTasks);
+                                                            }}
+                                                        >
+                                                            <MenuItem value="Yes">Yes</MenuItem>
+                                                            <MenuItem value="No">No</MenuItem>
+                                                            <MenuItem value="Verify">Verify</MenuItem>
+                                                        </Select>
+                                                    </FormControl>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+
+                            <TextField
+                                id="outstanding"
+                                label="Outstanding"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={outstanding}
+                                onChange={(e) => setOutstanding(e.target.value)}
+                                sx={{ mt: 2 }}
+                            />
+                        </>
+                    )}
 
                     <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 

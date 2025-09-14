@@ -5,6 +5,7 @@ import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firesto
 import { useNavigate } from 'react-router-dom';
 import { FlashOn } from '@mui/icons-material';
 import { AuthContext } from './App';
+import toast from 'react-hot-toast';
 
 function ViewJobSheetPage() {
   const { user } = useContext(AuthContext);
@@ -16,6 +17,8 @@ function ViewJobSheetPage() {
   const [newStatus, setNewStatus] = useState('');
   const [invoicedJobSheets, setInvoicedJobSheets] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -60,8 +63,8 @@ function ViewJobSheetPage() {
 
   const handleUpdateStatus = (sheet) => {
     if (sheet) {
-      setNewStatus(sheet.status);
       setSelectedSheet(sheet);
+      setNewStatus(sheet.status);
       setStatusDialogOpen(true);
       setAnchorEl(null);
     }
@@ -80,31 +83,70 @@ function ViewJobSheetPage() {
 
   const handleStatusSave = async () => {
     if (!selectedSheet) return;
-    const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
-    try {
-      await updateDoc(jobSheetRef, { status: newStatus });
-      const updatedJobSheets = jobSheets.map(sheet =>
-        sheet.id === selectedSheet.id ? { ...sheet, status: newStatus } : sheet
-      );
-      setJobSheets(updatedJobSheets);
-      handleStatusDialogClose();
-    } catch (error) {
-      console.error("Error updating status: ", error);
+
+    if (newStatus === 'Invoiced') {
+      setStatusDialogOpen(false);
+      setInvoiceDialogOpen(true);
+    } else {
+      const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
+      const promise = updateDoc(jobSheetRef, { status: newStatus });
+
+      toast.promise(promise, {
+        loading: 'Updating status...',
+        success: () => {
+          const updatedJobSheets = jobSheets.map(sheet =>
+            sheet.id === selectedSheet.id ? { ...sheet, status: newStatus } : sheet
+          );
+          setJobSheets(updatedJobSheets);
+          handleStatusDialogClose();
+          return 'Status updated successfully!';
+        },
+        error: (err) => `Failed to update status: ${err.toString()}`,
+      });
     }
   };
 
   const handleDelete = async () => {
     if (!selectedSheet) return;
     const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
-    try {
-      await deleteDoc(jobSheetRef);
-      const updatedJobSheets = jobSheets.filter(sheet => sheet.id !== selectedSheet.id);
-      setJobSheets(updatedJobSheets);
-      setDeleteDialogOpen(false);
-      setSelectedSheet(null);
-    } catch (error) {
-      console.error("Error deleting document: ", error);
+    const promise = deleteDoc(jobSheetRef);
+
+    toast.promise(promise, {
+      loading: 'Deleting job sheet...',
+      success: () => {
+        const updatedJobSheets = jobSheets.filter(sheet => sheet.id !== selectedSheet.id);
+        setJobSheets(updatedJobSheets);
+        setDeleteDialogOpen(false);
+        setSelectedSheet(null);
+        return 'Job sheet deleted successfully!';
+      },
+      error: (err) => `Failed to delete job sheet: ${err.toString()}`,
+    });
+  };
+
+  const handleInvoiceNumberSave = async () => {
+    if (!selectedSheet || !invoiceNumber) {
+      toast.error('Invoice number is required.');
+      return;
     }
+
+    const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
+    const promise = updateDoc(jobSheetRef, { status: 'Invoiced', invoiceNumber });
+
+    toast.promise(promise, {
+      loading: 'Saving invoice number...',
+      success: () => {
+        const updatedJobSheets = jobSheets.map(sheet =>
+          sheet.id === selectedSheet.id ? { ...sheet, status: 'Invoiced', invoiceNumber } : sheet
+        );
+        setJobSheets(updatedJobSheets);
+        setInvoiceDialogOpen(false);
+        setInvoiceNumber('');
+        handleStatusDialogClose();
+        return 'Invoice number saved successfully!';
+      },
+      error: (err) => `Failed to save invoice number: ${err.toString()}`,
+    });
   };
 
   const formatDate = (dateString) => {
@@ -120,7 +162,8 @@ function ViewJobSheetPage() {
     const searchTermMatch =
       (sheet.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (sheet.jobNumber?.toString() || '').includes(searchTerm) ||
-      (sheet.orderNumber?.toString() || '').includes(searchTerm) ||
+      (sheet.orderType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (sheet.orderValue?.toString() || '').includes(searchTerm) ||
       (sheet.technicianName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     if (user && user.displayName) {
@@ -152,7 +195,7 @@ function ViewJobSheetPage() {
           <TableHead>
             <TableRow>
               <TableCell>Job Number</TableCell>
-              <TableCell>Order Number</TableCell>
+              <TableCell>Order</TableCell>
               <TableCell>Company Name</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Technician</TableCell>
@@ -164,7 +207,7 @@ function ViewJobSheetPage() {
             {filteredJobSheets.map((sheet) => (
               <TableRow key={sheet.id}>
                 <TableCell>{sheet.jobNumber}</TableCell>
-                <TableCell>{sheet.orderNumber}</TableCell>
+                <TableCell>{sheet.orderType === 'S.L.A' ? 'S.L.A' : sheet.orderValue}</TableCell>
                 <TableCell>{sheet.companyName}</TableCell>
                 <TableCell>{formatDate(sheet.date)}</TableCell>
                 <TableCell>{sheet.technicianName}</TableCell>
@@ -190,11 +233,12 @@ function ViewJobSheetPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Job Number</TableCell>
-                  <TableCell>Order Number</TableCell>
+                  <TableCell>Order</TableCell>
                   <TableCell>Company Name</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Technician</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Invoice #</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -202,11 +246,12 @@ function ViewJobSheetPage() {
                 {invoicedJobSheets.map((sheet) => (
                   <TableRow key={sheet.id}>
                     <TableCell>{sheet.jobNumber}</TableCell>
-                    <TableCell>{sheet.orderNumber}</TableCell>
+                    <TableCell>{sheet.orderType === 'S.L.A' ? 'S.L.A' : sheet.orderValue}</TableCell>
                     <TableCell>{sheet.companyName}</TableCell>
                     <TableCell>{formatDate(sheet.date)}</TableCell>
                     <TableCell>{sheet.technicianName}</TableCell>
                     <TableCell>{sheet.status}</TableCell>
+                    <TableCell>{sheet.invoiceNumber}</TableCell>
                     <TableCell>
                       <IconButton onClick={(e) => handleMenuClick(e, sheet)}>
                         <FlashOn />
@@ -264,6 +309,27 @@ function ViewJobSheetPage() {
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDelete} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={invoiceDialogOpen} onClose={() => setInvoiceDialogOpen(false)}>
+        <DialogTitle>Enter Invoice Number</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="invoiceNumber"
+            label="Invoice Number"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={invoiceNumber}
+            onChange={(e) => setInvoiceNumber(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInvoiceDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleInvoiceNumberSave}>Save</Button>
         </DialogActions>
       </Dialog>
     </Container>

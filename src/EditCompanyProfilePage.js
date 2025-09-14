@@ -5,14 +5,17 @@ import { db } from './firebase';
 import { doc, getDoc, setDoc, addDoc, collection } from 'firebase/firestore';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import toast from 'react-hot-toast';
 
-function EditCompanyProfilePage() {
+function EditCompanyProfilePage({ viewMode = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyTelephone, setCompanyTelephone] = useState('');
   const [contacts, setContacts] = useState([{ name: '', email: '', cellphone: '' }]);
+
+  const pageTitle = viewMode ? 'Company Profile' : (id ? 'Edit Company Profile' : 'New Company Profile');
 
   useEffect(() => {
     if (id) {
@@ -50,13 +53,19 @@ function EditCompanyProfilePage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const profileData = { companyName, companyAddress, companyTelephone, contacts };
-    if (id) {
-      const docRef = doc(db, 'companyProfiles', id);
-      await setDoc(docRef, profileData);
-    } else {
-      await addDoc(collection(db, 'companyProfiles'), profileData);
-    }
-    navigate('/company-profiles');
+
+    const promise = id
+      ? setDoc(doc(db, 'companyProfiles', id), profileData)
+      : addDoc(collection(db, 'companyProfiles'), profileData);
+
+    toast.promise(promise, {
+      loading: id ? 'Saving changes...' : 'Creating profile...',
+      success: () => {
+        navigate('/company-profiles');
+        return id ? 'Profile updated successfully!' : 'Profile created successfully!';
+      },
+      error: (err) => `Failed to save profile: ${err.toString()}`,
+    });
   };
 
   return (
@@ -65,7 +74,7 @@ function EditCompanyProfilePage() {
         <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
       </Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
-        {id ? 'Edit Company Profile' : 'New Company Profile'}
+        {pageTitle}
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -75,6 +84,7 @@ function EditCompanyProfilePage() {
           margin="normal"
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
+          disabled={viewMode}
         />
         <TextField
           id="companyAddress"
@@ -83,6 +93,7 @@ function EditCompanyProfilePage() {
           margin="normal"
           value={companyAddress}
           onChange={(e) => setCompanyAddress(e.target.value)}
+          disabled={viewMode}
         />
         <TextField
           id="companyTelephone"
@@ -91,6 +102,7 @@ function EditCompanyProfilePage() {
           margin="normal"
           value={companyTelephone}
           onChange={(e) => setCompanyTelephone(e.target.value)}
+          disabled={viewMode}
         />
         <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 2 }}>
           Contacts
@@ -104,6 +116,7 @@ function EditCompanyProfilePage() {
               value={contact.name}
               onChange={(e) => handleContactChange(index, e)}
               sx={{ mr: 1 }}
+              disabled={viewMode}
             />
             <TextField
               id={`contact-email-${index}`}
@@ -113,6 +126,7 @@ function EditCompanyProfilePage() {
               value={contact.email}
               onChange={(e) => handleContactChange(index, e)}
               sx={{ mr: 1 }}
+              disabled={viewMode}
             />
             <TextField
               id={`contact-cellphone-${index}`}
@@ -121,25 +135,32 @@ function EditCompanyProfilePage() {
               value={contact.cellphone}
               onChange={(e) => handleContactChange(index, e)}
               sx={{ mr: 1 }}
+              disabled={viewMode}
             />
-            <IconButton onClick={() => handleRemoveContact(index)}>
-              <DeleteIcon />
-            </IconButton>
+            {!viewMode && (
+              <IconButton onClick={() => handleRemoveContact(index)}>
+                <DeleteIcon />
+              </IconButton>
+            )}
           </Box>
         ))}
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={handleAddContact}
-          sx={{ mb: 2 }}
-        >
-          Add Contact
-        </Button>
-        <Box sx={{ mt: 2 }}>
-          <Button type="submit" variant="contained" color="primary">
-            {id ? 'Save Changes' : 'Create Profile'}
+        {!viewMode && (
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleAddContact}
+            sx={{ mb: 2 }}
+          >
+            Add Contact
           </Button>
-        </Box>
+        )}
+        {!viewMode && (
+          <Box sx={{ mt: 2 }}>
+            <Button type="submit" variant="contained" color="primary">
+              {id ? 'Save Changes' : 'Create Profile'}
+            </Button>
+          </Box>
+        )}
       </form>
     </Container>
   );

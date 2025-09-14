@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, useMediaQuery, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
@@ -30,6 +30,7 @@ function NewJobSheetPage() {
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
     const [outstanding, setOutstanding] = useState('');
+    const [confirmNewCompanyDialogOpen, setConfirmNewCompanyDialogOpen] = useState(false);
 
     const taskNames = [
         'Client Logbook Check',
@@ -152,31 +153,19 @@ function NewJobSheetPage() {
 
     const navigate = useNavigate();
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (!companyNameInput) {
-            toast.error('Please enter a company name.');
-            return;
-        }
+    const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
+        let finalCompanyId = existingCompany?.id || null;
+        let finalContacts = existingCompany ? [...(existingCompany.contacts || [])] : [];
 
-        let finalCompanyId = selectedCompany?.id;
-        let finalContacts = selectedCompany ? [...selectedCompany.contacts] : [];
-
-        if (!selectedCompany || selectedCompany.companyName !== companyNameInput) {
-            const existingCompany = companies.find(comp => comp.companyName === companyNameInput);
-            if (existingCompany) {
-                finalCompanyId = existingCompany.id;
-                finalContacts = [...(existingCompany.contacts || [])];
-            } else {
-                const newCompanyData = {
-                    companyName: companyNameInput,
-                    companyAddress: companyAddress,
-                    companyTelephone: companyTelephone,
-                    contacts: [],
-                };
-                const newCompanyRef = await addDoc(collection(db, 'companyProfiles'), newCompanyData);
-                finalCompanyId = newCompanyRef.id;
-            }
+        if (!existingCompany && createNewCompany) {
+            const newCompanyData = {
+                companyName: companyNameInput,
+                companyAddress: companyAddress,
+                companyTelephone: companyTelephone,
+                contacts: [],
+            };
+            const newCompanyRef = await addDoc(collection(db, 'companyProfiles'), newCompanyData);
+            finalCompanyId = newCompanyRef.id;
         }
 
         const newContact = {
@@ -229,6 +218,22 @@ function NewJobSheetPage() {
             },
             error: 'Failed to create job sheet. Please try again.',
         });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!companyNameInput) {
+            toast.error('Please enter a company name.');
+            return;
+        }
+
+        const existingCompany = companies.find(comp => comp.companyName.toLowerCase() === companyNameInput.toLowerCase());
+
+        if (existingCompany) {
+            proceedToCreateJobSheet(existingCompany, false);
+        } else {
+            setConfirmNewCompanyDialogOpen(true);
+        }
     };
 
     return (
@@ -591,6 +596,23 @@ function NewJobSheetPage() {
                     </Box>
                 </form>
             </Paper>
+            <Dialog
+                open={confirmNewCompanyDialogOpen}
+                onClose={() => setConfirmNewCompanyDialogOpen(false)}
+            >
+                <DialogTitle>Create New Company?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        The company "{companyNameInput}" does not exist. Would you like to create a new company profile with the details provided?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={async () => { setConfirmNewCompanyDialogOpen(false); await proceedToCreateJobSheet(null, false); }}>No</Button>
+                    <Button onClick={async () => { setConfirmNewCompanyDialogOpen(false); await proceedToCreateJobSheet(null, true); }} autoFocus>
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }
