@@ -93,6 +93,12 @@ function EditJobSheetPage() {
                 const company = companiesList.find(c => c.companyName === data.companyName);
                 if (company) {
                     setSelectedCompany(company);
+                    if (data.contact) {
+                        const contact = company.contacts.find(c => c.name === data.contact.name);
+                        if (contact) {
+                            setSelectedContact(contact);
+                        }
+                    }
                 }
             }
         };
@@ -162,6 +168,22 @@ function EditJobSheetPage() {
 
     const navigate = useNavigate();
 
+    const handleAddSheet = () => {
+        navigate('/new-job-sheet', {
+            state: {
+                jobNumber,
+                companyName: companyNameInput,
+                companyAddress,
+                companyTelephone,
+                contact: {
+                    name: contactNameInput,
+                    cellphone: contactCellphoneInput,
+                    email: contactEmailInput,
+                },
+            }
+        });
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         const jobSheetRef = doc(db, 'jobSheets', id);
@@ -204,7 +226,10 @@ function EditJobSheetPage() {
 
     return (
         <Container maxWidth="md">
-            <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mt: 2, mb: 2 }}>Back</Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
+                <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+                <Button variant="contained" onClick={handleAddSheet}>Add Sheet</Button>
+            </Box>
             <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
                 <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
                     Edit Job Sheet

@@ -3,12 +3,13 @@ import { Typography, Container, TextField, Button, Box, Autocomplete, Grid, Divi
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import SignaturePadWrapper from './SignaturePad';
 import toast from 'react-hot-toast';
 
 function NewJobSheetPage() {
+    const location = useLocation();
     const orderTypeInputRef = useRef(null);
     const [companies, setCompanies] = useState([]);
     const [companyNameInput, setCompanyNameInput] = useState('');
@@ -76,19 +77,54 @@ function NewJobSheetPage() {
     }, []);
 
     useEffect(() => {
-        const fetchNumbers = async () => {
-            const countersRef = doc(db, 'counters', 'jobOrder');
-            const countersSnap = await getDoc(countersRef);
-            if (countersSnap.exists()) {
-                const data = countersSnap.data();
-                setJobNumber(data.lastJobNumber + 1);
+        const fetchInitialData = async () => {
+            if (location.state) {
+                const {
+                    jobNumber,
+                    companyName,
+                    companyAddress,
+                    companyTelephone,
+                    contact,
+                } = location.state;
+
+                const companiesCollection = collection(db, 'companyProfiles');
+                const companiesSnapshot = await getDocs(companiesCollection);
+                const companiesList = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const company = companiesList.find(c => c.companyName === companyName);
+
+                if (company) {
+                    setSelectedCompany(company);
+                    if (contact) {
+                        const contactData = company.contacts.find(c => c.name === contact.name);
+                        if (contactData) {
+                            setSelectedContact(contactData);
+                        }
+                    }
+                }
+
+                setJobNumber(jobNumber);
+                setCompanyNameInput(companyName || '');
+                setCompanyAddress(companyAddress || '');
+                setCompanyTelephone(companyTelephone || '');
+                if (contact) {
+                    setContactNameInput(contact.name || '');
+                    setContactCellphoneInput(contact.cellphone || '');
+                    setContactEmailInput(contact.email || '');
+                }
             } else {
-                await setDoc(countersRef, { lastJobNumber: 0 });
-                setJobNumber(1);
+                const countersRef = doc(db, 'counters', 'jobOrder');
+                const countersSnap = await getDoc(countersRef);
+                if (countersSnap.exists()) {
+                    const data = countersSnap.data();
+                    setJobNumber(data.lastJobNumber + 1);
+                } else {
+                    await setDoc(countersRef, { lastJobNumber: 0 });
+                    setJobNumber(1);
+                }
             }
         };
-        fetchNumbers();
-    }, []);
+        fetchInitialData();
+    }, [location.state]);
 
     useEffect(() => {
         if (selectedCompany) {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography } from '@mui/material';
+import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography, Collapse } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +21,9 @@ function ViewJobSheetPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [openRows, setOpenRows] = useState({});
+  const [isSubmenu, setIsSubmenu] = useState(false);
 
   const navigate = useNavigate();
 
@@ -33,13 +38,14 @@ function ViewJobSheetPage() {
   }, []);
 
   useEffect(() => {
-    const filteredInvoiced = jobSheets.filter(sheet => sheet.status === 'Invoiced');
-    setInvoicedJobSheets(filteredInvoiced);
+    const filteredCompleted = jobSheets.filter(sheet => sheet.status === 'Invoiced' || sheet.status === 'Cancelled');
+    setInvoicedJobSheets(filteredCompleted);
   }, [jobSheets]);
 
-  const handleMenuClick = (event, sheet) => {
+  const handleMenuClick = (event, sheet, isSub = false) => {
     setAnchorEl(event.currentTarget);
     setSelectedSheet(sheet);
+    setIsSubmenu(isSub);
   };
 
   const handleMenuClose = () => {
@@ -76,6 +82,38 @@ function ViewJobSheetPage() {
     setAnchorEl(null);
   };
 
+  const handleCancelClick = (sheet) => {
+    setSelectedSheet(sheet);
+    setCancelDialogOpen(true);
+    setAnchorEl(null);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedSheet) return;
+
+    const sheetsToUpdate = jobSheets.filter(s => s.jobNumber === selectedSheet.jobNumber);
+    const promises = sheetsToUpdate.map(s => {
+      const jobSheetRef = doc(db, 'jobSheets', s.id);
+      return updateDoc(jobSheetRef, { status: 'Cancelled' });
+    });
+
+    const promise = Promise.all(promises);
+
+    toast.promise(promise, {
+      loading: 'Cancelling job...',
+      success: () => {
+        const updatedJobSheets = jobSheets.map(s =>
+          s.jobNumber === selectedSheet.jobNumber ? { ...s, status: 'Cancelled' } : s
+        );
+        setJobSheets(updatedJobSheets);
+        setCancelDialogOpen(false);
+        handleMenuClose();
+        return 'Job cancelled successfully!';
+      },
+      error: (err) => `Failed to cancel job: ${err.toString()}`,
+    });
+  };
+
   const handleStatusDialogClose = () => {
     setStatusDialogOpen(false);
     setSelectedSheet(null);
@@ -84,18 +122,24 @@ function ViewJobSheetPage() {
   const handleStatusSave = async () => {
     if (!selectedSheet) return;
 
+    const sheetsToUpdate = jobSheets.filter(sheet => sheet.jobNumber === selectedSheet.jobNumber);
+
     if (newStatus === 'Invoiced') {
       setStatusDialogOpen(false);
       setInvoiceDialogOpen(true);
     } else {
-      const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
-      const promise = updateDoc(jobSheetRef, { status: newStatus });
+      const promises = sheetsToUpdate.map(sheet => {
+        const jobSheetRef = doc(db, 'jobSheets', sheet.id);
+        return updateDoc(jobSheetRef, { status: newStatus });
+      });
+
+      const promise = Promise.all(promises);
 
       toast.promise(promise, {
         loading: 'Updating status...',
         success: () => {
           const updatedJobSheets = jobSheets.map(sheet =>
-            sheet.id === selectedSheet.id ? { ...sheet, status: newStatus } : sheet
+            sheet.jobNumber === selectedSheet.jobNumber ? { ...sheet, status: newStatus } : sheet
           );
           setJobSheets(updatedJobSheets);
           handleStatusDialogClose();
@@ -130,14 +174,19 @@ function ViewJobSheetPage() {
       return;
     }
 
-    const jobSheetRef = doc(db, 'jobSheets', selectedSheet.id);
-    const promise = updateDoc(jobSheetRef, { status: 'Invoiced', invoiceNumber });
+    const sheetsToUpdate = jobSheets.filter(sheet => sheet.jobNumber === selectedSheet.jobNumber);
+    const promises = sheetsToUpdate.map(sheet => {
+      const jobSheetRef = doc(db, 'jobSheets', sheet.id);
+      return updateDoc(jobSheetRef, { status: 'Invoiced', invoiceNumber });
+    });
+
+    const promise = Promise.all(promises);
 
     toast.promise(promise, {
       loading: 'Saving invoice number...',
       success: () => {
         const updatedJobSheets = jobSheets.map(sheet =>
-          sheet.id === selectedSheet.id ? { ...sheet, status: 'Invoiced', invoiceNumber } : sheet
+          sheet.jobNumber === selectedSheet.jobNumber ? { ...sheet, status: 'Invoiced', invoiceNumber } : sheet
         );
         setJobSheets(updatedJobSheets);
         setInvoiceDialogOpen(false);
@@ -204,21 +253,90 @@ function ViewJobSheetPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredJobSheets.map((sheet) => (
-              <TableRow key={sheet.id}>
-                <TableCell>{sheet.jobNumber}</TableCell>
-                <TableCell>{sheet.orderType === 'S.L.A' ? 'S.L.A' : sheet.orderValue}</TableCell>
-                <TableCell>{sheet.companyName}</TableCell>
-                <TableCell>{formatDate(sheet.date)}</TableCell>
-                <TableCell>{sheet.technicianName}</TableCell>
-                <TableCell>{sheet.status}</TableCell>
-                <TableCell>
-                  <IconButton onClick={(e) => handleMenuClick(e, sheet)}>
-                    <FlashOn />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+            {Object.entries(
+              filteredJobSheets.reduce((acc, sheet) => {
+                if (!acc[sheet.jobNumber]) {
+                  acc[sheet.jobNumber] = [];
+                }
+                acc[sheet.jobNumber].push(sheet);
+                return acc;
+              }, {})
+            ).map(([jobNumber, sheets]) => {
+              const multipleOrderTypes = new Set(sheets.map(s => s.orderType)).size > 1;
+              return (
+              <React.Fragment key={jobNumber}>
+                <TableRow>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <IconButton
+                        aria-label="expand row"
+                        size="small"
+                        onClick={() => {
+                          if (sheets.length > 1) {
+                            const newOpenRows = { ...openRows };
+                            newOpenRows[jobNumber] = !newOpenRows[jobNumber];
+                            setOpenRows(newOpenRows);
+                          }
+                        }}
+                        style={{ visibility: sheets.length > 1 ? 'visible' : 'hidden' }}
+                      >
+                        {openRows[jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                      </IconButton>
+                      {jobNumber}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{multipleOrderTypes ? '~' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
+                  <TableCell>{sheets[0].companyName}</TableCell>
+                  <TableCell>{formatDate(sheets[0].date)}</TableCell>
+                  <TableCell>{sheets[0].technicianName}</TableCell>
+                  <TableCell>{sheets[0].status}</TableCell>
+                  <TableCell>
+                    <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
+                      <FlashOn />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                    <Collapse in={openRows[jobNumber]} timeout="auto" unmountOnExit>
+                      <Box sx={{ margin: 1 }}>
+                        
+                        <Table size="small" aria-label="purchases">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell />
+                              <TableCell>Order</TableCell>
+                              <TableCell />
+                              <TableCell>Date</TableCell>
+                              <TableCell>Technician</TableCell>
+                              <TableCell />
+                              <TableCell>Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {sheets.map((historyRow) => (
+                              <TableRow key={historyRow.id}>
+                                <TableCell />
+                                <TableCell>{historyRow.orderType === 'S.L.A' ? 'S.L.A' : historyRow.orderValue}</TableCell>
+                                <TableCell />
+                                <TableCell>{formatDate(historyRow.date)}</TableCell>
+                                <TableCell>{historyRow.technicianName}</TableCell>
+                                <TableCell />
+                                <TableCell>
+                                  <IconButton onClick={(e) => handleMenuClick(e, historyRow, true)}>
+                                    <FlashOn />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            )})}
           </TableBody>
         </Table>
       </TableContainer>
@@ -226,7 +344,7 @@ function ViewJobSheetPage() {
       {!user?.displayName && (
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
-            Invoiced Jobs
+            Completed Jobs
           </Typography>
           <TableContainer component={Paper}>
             <Table>
@@ -243,22 +361,92 @@ function ViewJobSheetPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {invoicedJobSheets.map((sheet) => (
-                  <TableRow key={sheet.id}>
-                    <TableCell>{sheet.jobNumber}</TableCell>
-                    <TableCell>{sheet.orderType === 'S.L.A' ? 'S.L.A' : sheet.orderValue}</TableCell>
-                    <TableCell>{sheet.companyName}</TableCell>
-                    <TableCell>{formatDate(sheet.date)}</TableCell>
-                    <TableCell>{sheet.technicianName}</TableCell>
-                    <TableCell>{sheet.status}</TableCell>
-                    <TableCell>{sheet.invoiceNumber}</TableCell>
-                    <TableCell>
-                      <IconButton onClick={(e) => handleMenuClick(e, sheet)}>
-                        <FlashOn />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {Object.entries(
+                  invoicedJobSheets.reduce((acc, sheet) => {
+                    if (!acc[sheet.jobNumber]) {
+                      acc[sheet.jobNumber] = [];
+                    }
+                    acc[sheet.jobNumber].push(sheet);
+                    return acc;
+                  }, {})
+                ).map(([jobNumber, sheets]) => {
+                  const multipleOrderTypes = new Set(sheets.map(s => s.orderType)).size > 1;
+                  return (
+                  <React.Fragment key={jobNumber}>
+                    <TableRow>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <IconButton
+                            aria-label="expand row"
+                            size="small"
+                            onClick={() => {
+                              if (sheets.length > 1) {
+                                const newOpenRows = { ...openRows };
+                                newOpenRows[jobNumber] = !newOpenRows[jobNumber];
+                                setOpenRows(newOpenRows);
+                              }
+                            }}
+                            style={{ visibility: sheets.length > 1 ? 'visible' : 'hidden' }}
+                          >
+                            {openRows[jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                          </IconButton>
+                          {jobNumber}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{multipleOrderTypes ? '~' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
+                      <TableCell>{sheets[0].companyName}</TableCell>
+                      <TableCell>{formatDate(sheets[0].date)}</TableCell>
+                      <TableCell>{sheets[0].technicianName}</TableCell>
+                      <TableCell>{sheets[0].status}</TableCell>
+                      <TableCell>{sheets[0].invoiceNumber}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
+                          <FlashOn />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                        <Collapse in={openRows[jobNumber]} timeout="auto" unmountOnExit>
+                          <Box sx={{ margin: 1 }}>
+                            <Table size="small" aria-label="purchases">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell />
+                                  <TableCell>Order</TableCell>
+                                  <TableCell />
+                                  <TableCell>Date</TableCell>
+                                  <TableCell>Technician</TableCell>
+                                  <TableCell />
+                                  <TableCell>Invoice #</TableCell>
+                                  <TableCell>Actions</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {sheets.map((historyRow) => (
+                                  <TableRow key={historyRow.id}>
+                                    <TableCell />
+                                    <TableCell>{historyRow.orderType === 'S.L.A' ? 'S.L.A' : historyRow.orderValue}</TableCell>
+                                    <TableCell />
+                                    <TableCell>{formatDate(historyRow.date)}</TableCell>
+                                    <TableCell>{historyRow.technicianName}</TableCell>
+                                    <TableCell />
+                                    <TableCell>{historyRow.invoiceNumber}</TableCell>
+                                    <TableCell>
+                                      <IconButton onClick={(e) => handleMenuClick(e, historyRow, true)}>
+                                        <FlashOn />
+                                      </IconButton>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                )})}
               </TableBody>
             </Table>
           </TableContainer>
@@ -271,9 +459,10 @@ function ViewJobSheetPage() {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => handleView(selectedSheet)}>View</MenuItem>
-                {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>}
-        {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>}
-                {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleDeleteClick(selectedSheet)} sx={{ color: 'error.main' }}>Delete</MenuItem>}
+        {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>}
+        {selectedSheet?.status !== 'Invoiced' && !isSubmenu && <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>}
+        {isSubmenu && <MenuItem onClick={() => handleDeleteClick(selectedSheet)} sx={{ color: 'error.main' }}>Delete</MenuItem>}
+        {!isSubmenu && <MenuItem onClick={() => handleCancelClick(selectedSheet)} sx={{ color: 'error.main' }}>Cancel</MenuItem>}
       </Menu>
       <Dialog open={statusDialogOpen} onClose={handleStatusDialogClose}>
         <DialogTitle>Update Status</DialogTitle>
@@ -309,6 +498,20 @@ function ViewJobSheetPage() {
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDelete} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+      >
+        <DialogTitle>Cancel Job</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to cancel this job?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelDialogOpen(false)}>No</Button>
+          <Button onClick={handleConfirmCancel} color="error">Yes</Button>
         </DialogActions>
       </Dialog>
 
