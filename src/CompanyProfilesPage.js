@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Button, Box, Menu, MenuItem, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Button, Box, Menu, MenuItem, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { useNavigate, Link } from 'react-router-dom';
 import { db } from './firebase';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
@@ -13,6 +14,7 @@ function CompanyProfilesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -73,15 +75,23 @@ function CompanyProfilesPage() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Company Profiles
-        </Typography>
-        <Button variant="contained" component={Link} to="/company-profiles/new" sx={{ mb: 2 }}>
-          New Profile
-        </Button>
+    <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+      <Box sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        bgcolor: theme.palette.background.paper,
+        p: 2
+      }}>
+        <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Company Profiles
+          </Typography>
+          <Button variant="contained" component={Link} to="/company-profiles/new" sx={{ mb: 2 }}>
+            New Profile
+          </Button>
+        </Box>
       </Box>
       <TableContainer component={Paper}>
         <Table>
@@ -133,7 +143,7 @@ function CompanyProfilesPage() {
           <Button onClick={handleDelete} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }
 

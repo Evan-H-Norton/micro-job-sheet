@@ -1,7 +1,8 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Typography, Container, Paper, Button, TextField, Box } from '@mui/material';
+import { Typography, Paper, Button, TextField, Box } from '@mui/material';
 import { AuthContext } from './App';
 import { reauthenticateWithCredential, EmailAuthProvider, updatePassword, updateProfile } from 'firebase/auth';
+import { useTheme } from '@mui/material/styles';
 import { auth } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ function ProfilePage() {
   const [technicianName, setTechnicianName] = useState('');
 
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -67,8 +69,16 @@ function ProfilePage() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
+    <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+      <Box sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        bgcolor: theme.palette.background.paper,
+        p: 2
+      }}>
+        <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
+      </Box>
       <Paper sx={{ p: 2, mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
           User Profile
@@ -137,7 +147,7 @@ function ProfilePage() {
           <Typography>Loading...</Typography>
         )}
       </Paper>
-    </Container>
+    </Box>
   );
 }
 

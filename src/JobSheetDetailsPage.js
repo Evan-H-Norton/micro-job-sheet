@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, useMediaQuery, Button, Box, Slide, Paper } from '@mui/material';
+import { Typography, useMediaQuery, Button, Box, Slide, Paper } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -56,8 +56,17 @@ function JobSheetDetailsPage() {
   }
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', my: 2 }}>
+    <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+      <Box sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        bgcolor: theme.palette.background.paper,
+        p: 2,
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+      }}>
         <Box sx={{ justifySelf: 'start' }}>
           <Button variant="outlined" onClick={() => navigate('/view-job-sheet')}>Back</Button>
         </Box>
@@ -105,7 +114,7 @@ function JobSheetDetailsPage() {
             />
         </Paper>
       </Slide>
-    </Container>
+    </Box>
   );
 }
 

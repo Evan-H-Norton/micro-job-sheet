@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Container, Button, useMediaQuery, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper } from '@mui/material';
+import { Button, useMediaQuery, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Box, Menu, MenuItem, Slide } from '@mui/material';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
@@ -31,7 +32,9 @@ function NewJobSheetPage() {
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
     const [outstanding, setOutstanding] = useState('');
+    const slideDirection = location.state?.direction || 'up';
     const [confirmNewCompanyDialogOpen, setConfirmNewCompanyDialogOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
 
     const taskNames = [
         'Client Logbook Check',
@@ -187,6 +190,32 @@ function NewJobSheetPage() {
         }
     };
 
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleAddSheet = () => {
+        navigate('/new-job-sheet', {
+            state: {
+                jobNumber,
+                companyName: companyNameInput,
+                companyAddress,
+                companyTelephone,
+                contact: {
+                    name: contactNameInput,
+                    cellphone: contactCellphoneInput,
+                    email: contactEmailInput,
+                },
+                direction: 'left',
+            }
+        });
+        handleMenuClose();
+    };
+
     const navigate = useNavigate();
 
     const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
@@ -273,66 +302,87 @@ function NewJobSheetPage() {
     };
 
     return (
-        <Container maxWidth="md">
-            <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
-            <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
-                <JobSheetForm
-                    isEditMode={false}
-                    onSubmit={handleSubmit}
-                    isSmallScreen={isSmallScreen}
-                    orderType={orderType}
-                    setOrderType={setOrderType}
-                    orderValue={orderValue}
-                    setOrderValue={setOrderValue}
-                    tasks={tasks}
-                    setTasks={setTasks}
-                    outstanding={outstanding}
-                    setOutstanding={setOutstanding}
-                    faultComplaint={faultComplaint}
-                    setFaultComplaint={setFaultComplaint}
-                    workCarriedOut={workCarriedOut}
-                    setWorkCarriedOut={setWorkCarriedOut}
-                    arrivalTime={arrivalTime}
-                    setArrivalTime={setArrivalTime}
-                    departureTime={departureTime}
-                    setDepartureTime={setDepartureTime}
-                    totalTime={totalTime}
-                    technicianName={technicianName}
-                    setTechnicianName={setTechnicianName}
-                    technicianSignature={technicianSignature}
-                    setTechnicianSignature={setTechnicianSignature}
-                    customerName={customerName}
-                    setCustomerName={setCustomerName}
-                    customerSignature={customerSignature}
-                    setCustomerSignature={setCustomerSignature}
-                    companies={companies}
-                    selectedCompany={selectedCompany}
-                    handleCompanyChange={handleCompanyChange}
-                    companyNameInput={companyNameInput}
-                    handleCompanyInputChange={handleCompanyInputChange}
-                    companyAddress={companyAddress}
-                    setCompanyAddress={setCompanyAddress}
-                    companyTelephone={companyTelephone}
-                    setCompanyTelephone={setCompanyTelephone}
-                    contactNameInput={contactNameInput}
-                    setContactNameInput={setContactNameInput}
-                    contactCellphoneInput={contactCellphoneInput}
-                    setContactCellphoneInput={setContactCellphoneInput}
-                    contactEmailInput={contactEmailInput}
-                    setContactEmailInput={setContactEmailInput}
-                    selectedContact={selectedContact}
-                    setSelectedContact={setSelectedContact}
-                    orderTypeInputRef={orderTypeInputRef}
-                    user={user}
-                    showSignaturePad={showSignaturePad}
-                    setShowSignaturePad={setShowSignaturePad}
-                    signatureTarget={signatureTarget}
-                    setSignatureTarget={setSignatureTarget}
-                    date={date}
-                    setDate={setDate}
-                    jobNumber={jobNumber}
-                />
-            </Paper>
+        <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                bgcolor: theme.palette.background.paper,
+                p: 2
+            }}>
+                <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
+                <Button variant="contained" onClick={handleMenuClick}>{isSmallScreen ? '+' : <FlashOnIcon />}</Button>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleAddSheet}>Add Sheet</MenuItem>
+                </Menu>
+            </Box>
+            <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
+                <Paper sx={{ p: 3, my: 2, mb: 3 }}>
+                    <JobSheetForm
+                        isEditMode={false}
+                        onSubmit={handleSubmit}
+                        isSmallScreen={isSmallScreen}
+                        orderType={orderType}
+                        setOrderType={setOrderType}
+                        orderValue={orderValue}
+                        setOrderValue={setOrderValue}
+                        tasks={tasks}
+                        setTasks={setTasks}
+                        outstanding={outstanding}
+                        setOutstanding={setOutstanding}
+                        faultComplaint={faultComplaint}
+                        setFaultComplaint={setFaultComplaint}
+                        workCarriedOut={workCarriedOut}
+                        setWorkCarriedOut={setWorkCarriedOut}
+                        arrivalTime={arrivalTime}
+                        setArrivalTime={setArrivalTime}
+                        departureTime={departureTime}
+                        setDepartureTime={setDepartureTime}
+                        totalTime={totalTime}
+                        technicianName={technicianName}
+                        setTechnicianName={setTechnicianName}
+                        technicianSignature={technicianSignature}
+                        setTechnicianSignature={setTechnicianSignature}
+                        customerName={customerName}
+                        setCustomerName={setCustomerName}
+                        customerSignature={customerSignature}
+                        setCustomerSignature={setCustomerSignature}
+                        companies={companies}
+                        selectedCompany={selectedCompany}
+                        handleCompanyChange={handleCompanyChange}
+                        companyNameInput={companyNameInput}
+                        handleCompanyInputChange={handleCompanyInputChange}
+                        companyAddress={companyAddress}
+                        setCompanyAddress={setCompanyAddress}
+                        companyTelephone={companyTelephone}
+                        setCompanyTelephone={setCompanyTelephone}
+                        contactNameInput={contactNameInput}
+                        setContactNameInput={setContactNameInput}
+                        contactCellphoneInput={contactCellphoneInput}
+                        setContactCellphoneInput={setContactCellphoneInput}
+                        contactEmailInput={contactEmailInput}
+                        setContactEmailInput={setContactEmailInput}
+                        selectedContact={selectedContact}
+                        setSelectedContact={setSelectedContact}
+                        orderTypeInputRef={orderTypeInputRef}
+                        user={user}
+                        showSignaturePad={showSignaturePad}
+                        setShowSignaturePad={setShowSignaturePad}
+                        signatureTarget={signatureTarget}
+                        setSignatureTarget={setSignatureTarget}
+                        date={date}
+                        setDate={setDate}
+                        jobNumber={jobNumber}
+                    />
+                </Paper>
+            </Slide>
             <Dialog
                 open={confirmNewCompanyDialogOpen}
                 onClose={() => setConfirmNewCompanyDialogOpen(false)}
@@ -350,7 +400,7 @@ function NewJobSheetPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </Container>
+        </Box>
     );
 }
 

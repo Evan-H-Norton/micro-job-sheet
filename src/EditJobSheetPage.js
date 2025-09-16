@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Container, Button, Box, useMediaQuery, Slide, Paper } from '@mui/material';
+import { Button, Box, useMediaQuery, Slide, Paper, Menu, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
-import { ArrowBack, ArrowForward } from '@mui/icons-material';
+import { ArrowBack, ArrowForward, FlashOn } from '@mui/icons-material';
 import JobSheetForm from './JobSheetForm';
 
 function EditJobSheetPage() {
@@ -40,6 +40,7 @@ function EditJobSheetPage() {
     const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
     const location = useLocation();
     const slideDirection = location.state?.direction || 'up';
+    const [anchorEl, setAnchorEl] = useState(null);
     
     
     const { user } = useContext(AuthContext);
@@ -188,6 +189,14 @@ function EditJobSheetPage() {
 
     const navigate = useNavigate();
 
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
     const handleAddSheet = () => {
         navigate('/new-job-sheet', {
             state: {
@@ -200,8 +209,10 @@ function EditJobSheetPage() {
                     cellphone: contactCellphoneInput,
                     email: contactEmailInput,
                 },
+                direction: 'left',
             }
         });
+        handleMenuClose();
     };
 
     const handleSubmit = async (event) => {
@@ -266,8 +277,17 @@ function EditJobSheetPage() {
     };
 
     return (
-        <Container maxWidth="md">
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
+        <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                bgcolor: theme.palette.background.paper,
+                p: 2
+            }}>
                 <Button variant="outlined" onClick={() => navigate('/view-job-sheet')}>Back</Button>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Button variant="outlined" onClick={() => handleNavigateSheet(-1)} disabled={currentSheetIndex === 0}>
@@ -278,10 +298,19 @@ function EditJobSheetPage() {
                         <ArrowForward />
                     </Button>
                 </Box>
-                <Button variant="contained" onClick={handleAddSheet}>{isSmallScreen ? '+' : 'Add Sheet'}</Button>
+                <Button variant="contained" onClick={handleMenuClick}>
+                    <FlashOn />
+                </Button>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleAddSheet}>Add Sheet</MenuItem>
+                </Menu>
             </Box>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
-                <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
+                <Paper sx={{ p: 3, my: 2, mb: 3 }}>
                     <JobSheetForm
                         isEditMode={true}
                         onSubmit={handleSubmit}
@@ -343,7 +372,7 @@ function EditJobSheetPage() {
                     />
                 </Paper>
             </Slide>
-        </Container>
+        </Box>
     );
 }
 

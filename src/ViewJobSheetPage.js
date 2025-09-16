@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography, useTheme } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography, useTheme } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -336,19 +336,26 @@ function ViewJobSheetPage() {
   
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-        <Button variant="outlined" onClick={() => navigate('/')}>Back</Button>
-
-      </Box>
-      <TextField
-        id="search"
-        label="Search"
-        variant="outlined"
-        fullWidth
-        margin="normal"
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+    <Box sx={{ maxWidth: 'lg', margin: 'auto' }}>
+        <Box sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
+            bgcolor: theme.palette.background.paper,
+            p: 2
+        }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                <Button variant="outlined" onClick={() => navigate('/')}>Back</Button>
+            </Box>
+            <TextField
+                id="search"
+                label="Search"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </Box>
       <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
         {user?.displayName ? 'Open Jobs' : 'Pending Invoice Jobs'}
       </Typography>
@@ -613,7 +620,7 @@ function ViewJobSheetPage() {
           <Button onClick={handleInvoiceNumberSave}>Save</Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }
 

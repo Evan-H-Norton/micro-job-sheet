@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, Button, Box } from '@mui/material';
+import { Typography, Button, Box } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, addDoc, collection } from 'firebase/firestore';
@@ -9,6 +10,7 @@ import CompanyProfileForm from './CompanyProfileForm';
 function EditCompanyProfilePage({ viewMode = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyTelephone, setCompanyTelephone] = useState('');
@@ -52,8 +54,14 @@ function EditCompanyProfilePage({ viewMode = false }) {
   };
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+    <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
+      <Box sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        bgcolor: theme.palette.background.paper,
+        p: 2
+      }}>
         <Button variant="outlined" onClick={() => navigate('/company-profiles')}>Back</Button>
       </Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
@@ -72,7 +80,7 @@ function EditCompanyProfilePage({ viewMode = false }) {
         viewMode={viewMode}
         id={id}
       />
-    </Container>
+    </Box>
   );
 }
 

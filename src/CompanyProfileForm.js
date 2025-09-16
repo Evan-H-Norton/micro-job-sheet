@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, TextField, Button, Box, IconButton } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function CompanyProfileForm({ 
@@ -105,11 +105,10 @@ function CompanyProfileForm({
       {!viewMode && (
         <Button
           variant="outlined"
-          startIcon={<AddIcon />}
           onClick={handleAddContact}
           sx={{ mb: 2 }}
         >
-          Add Contact
+          <FlashOnIcon />
         </Button>
       )}
       {!viewMode && (
