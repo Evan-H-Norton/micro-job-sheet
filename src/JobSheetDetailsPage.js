@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, TextField, Grid, Divider, Paper, useMediaQuery, Button, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Typography, Container, useMediaQuery, Button, Box, Slide, Paper } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { useParams, useNavigate } from 'react-router-dom';
-
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowBack, ArrowForward } from '@mui/icons-material';
+import JobSheetForm from './JobSheetForm';
 
 function JobSheetDetailsPage() {
   
   const [jobSheet, setJobSheet] = useState(null);
+  const [jobSheets, setJobSheets] = useState([]);
+  const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
+  const location = useLocation();
+  const slideDirection = location.state?.direction || 'up';
+  
   
   
   const { id } = useParams();
@@ -23,15 +29,27 @@ function JobSheetDetailsPage() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setJobSheet(data);
+
+        const jobSheetsCollection = collection(db, 'jobSheets');
+        const jobSheetsSnapshot = await getDocs(jobSheetsCollection);
+        const allJobSheets = jobSheetsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const relatedJobSheets = allJobSheets.filter(sheet => sheet.jobNumber === data.jobNumber);
+        setJobSheets(relatedJobSheets);
+        const newIndex = relatedJobSheets.findIndex(sheet => sheet.id === id);
+        setCurrentSheetIndex(newIndex);
         
       }
     };
     fetchJobSheet();
   }, [id]);
 
-  
-
-  
+  const handleNavigateSheet = (direction) => {
+    const newIndex = currentSheetIndex + direction;
+    if (newIndex >= 0 && newIndex < jobSheets.length) {
+        const slideDir = direction === 1 ? 'left' : 'right';
+        navigate(`/job-sheet/${jobSheets[newIndex].id}`, { state: { direction: slideDir } });
+    }
+};
 
   if (!jobSheet) {
     return <Typography>Loading...</Typography>;
@@ -39,239 +57,48 @@ function JobSheetDetailsPage() {
 
   return (
     <Container maxWidth="md">
-      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-        <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
+        <Button variant="outlined" onClick={() => navigate('/view-job-sheet')}>Back</Button>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button variant="outlined" onClick={() => handleNavigateSheet(-1)} disabled={currentSheetIndex === 0}>
+                <ArrowBack />
+            </Button>
+            <Button variant="outlined" disabled>{currentSheetIndex + 1}</Button>
+            <Button variant="outlined" onClick={() => handleNavigateSheet(1)} disabled={currentSheetIndex === jobSheets.length - 1}>
+                <ArrowForward />
+            </Button>
+        </Box>
+        <Button variant="contained" onClick={() => navigate(`/job-sheet/edit/${id}`, { state: { direction: 'up' } })}>{isSmallScreen ? '+' : 'Edit'}</Button>
       </Box>
-      <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
-          Job Sheet Details
-        </Typography>
-        <form>
-          <Grid container display="flex" gap={2} flexWrap="nowrap">
-            <Grid item width="33.333%">
-              <TextField
-                label={isSmallScreen ? "Job #" : "Job Number"}
-                value={jobSheet.jobNumber}
-                InputProps={{ readOnly: true }}
-                fullWidth
-              />
-            </Grid>
-            <Grid item width="33.333%">
-              <TextField
-                label="Order Type"
-                value={jobSheet.orderType}
-                InputProps={{ readOnly: true }}
-                fullWidth
-              />
-            </Grid>
-            {jobSheet.orderType === 'Order #' && jobSheet.orderNumber &&
-              <Grid item width="33.333%">
-                <TextField
-                  label={isSmallScreen ? "Order #" : "Order Number"}
-                  value={jobSheet.orderNumber}
-                  InputProps={{ readOnly: true }}
-                  fullWidth
-                />
-              </Grid>
-            }
-            <Grid item width="33.333%">
-              <TextField
-                label="Date"
-                type="date"
-                value={jobSheet.date}
-                InputLabelProps={{ shrink: true }}
-                InputProps={{ readOnly: true }}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-
-          <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-            <Grid item width="50%">
-              <TextField
-                label="Company Name"
-                value={jobSheet.companyName}
-                InputProps={{ readOnly: true }}
-                fullWidth
-              />
-            </Grid>
-            <Grid item width="50%">
-              <TextField
-                label="Contact Name"
-                fullWidth
-                value={jobSheet.contact.name}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-            <Grid item width="50%">
-              <TextField
-                label="Contact Cellphone"
-                fullWidth
-                value={jobSheet.contact.cellphone}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-            <Grid item width="50%">
-              <TextField
-                label="Contact Email"
-                type="email"
-                fullWidth
-                value={jobSheet.contact.email}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-          </Grid>
-          
-          <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-            <Grid item width="50%">
-              <TextField
-                label="Company Address"
-                fullWidth
-                value={jobSheet.companyAddress}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-            <Grid item width="50%">
-              <TextField
-                label="Company Telephone"
-                fullWidth
-                value={jobSheet.companyTelephone}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-          </Grid>
-
-          
-
-          <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
-
-          {jobSheet.orderType === 'Order #' ? (
-            <>
-              <TextField
-                  label="Fault / Complaint"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={jobSheet.faultComplaint}
-                  InputProps={{ readOnly: true }}
-              />
-
-              <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                  <Grid item width="33.333%">
-                      <TextField
-                          label="Arrival Time"
-                          type="time"
-                          fullWidth
-                          value={jobSheet.arrivalTime}
-                          InputLabelProps={{ shrink: true }}
-                          InputProps={{ readOnly: true }}
-                      />
-                  </Grid>
-                  <Grid item width="33.333%">
-                      <TextField
-                          label="Departure Time"
-                          type="time"
-                          fullWidth
-                          value={jobSheet.departureTime}
-                          InputLabelProps={{ shrink: true }}
-                          InputProps={{ readOnly: true }}
-                      />
-                  </Grid>
-                  <Grid item width="33.333%">
-                      <TextField
-                          label="Total Time"
-                          fullWidth
-                          value={jobSheet.totalTime}
-                          InputProps={{ readOnly: true }}
-                      />
-                  </Grid>
-              </Grid>
-
-              <TextField
-                  label="Work Carried Out"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  multiline
-                  rows={4}
-                  value={jobSheet.workCarriedOut}
-                  InputProps={{ readOnly: true }}
-              />
-            </>
-          ) : (
-            <>
-              <TableContainer component={Paper} sx={{ my: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Task</TableCell>
-                      <TableCell>Additional Notes</TableCell>
-                      <TableCell>Check</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {jobSheet.tasks.map((row, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{row.task}</TableCell>
-                        <TableCell>{row.notes}</TableCell>
-                        <TableCell>{row.check}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <TextField
-                id="outstanding"
-                label="Outstanding"
-                fullWidth
-                multiline
-                rows={4}
-                value={jobSheet.outstanding}
-                InputProps={{ readOnly: true }}
-                sx={{ mt: 2 }}
-              />
-            </>
-          )}
-
-          <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
-
-          <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
-              <Grid item xs={12} sm={6}>
-                  <TextField
-                      label="Technician Name"
-                      fullWidth
-                      value={jobSheet.technicianName}
-                      InputProps={{ readOnly: true }}
-                  />
-              </Grid>
-              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  {jobSheet.technicianSignature && (
-                      <img src={jobSheet.technicianSignature} alt="Technician Signature" style={{ border: '1px solid #ccc', maxWidth: '200px', backgroundColor: 'white' }} />
-                  )}
-              </Grid>
-          </Grid>
-
-          <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
-              <Grid item xs={12} sm={6}>
-                  <TextField
-                      label="Customer Name"
-                      fullWidth
-                      value={jobSheet.customerName}
-                      InputProps={{ readOnly: true }}
-                  />
-              </Grid>
-              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  {jobSheet.customerSignature && (
-                      <img src={jobSheet.customerSignature} alt="Customer Signature" style={{ border: '1px solid #ccc', maxWidth: '200px', backgroundColor: 'white' }} />
-                  )}
-              </Grid>
-          </Grid>
-        </form>
-      </Paper>
-      
+      <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
+        <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
+            <JobSheetForm
+                viewMode={true}
+                isSmallScreen={isSmallScreen}
+                orderType={jobSheet.orderType}
+                orderValue={jobSheet.orderValue}
+                tasks={jobSheet.tasks}
+                outstanding={jobSheet.outstanding}
+                faultComplaint={jobSheet.faultComplaint}
+                workCarriedOut={jobSheet.workCarriedOut}
+                arrivalTime={jobSheet.arrivalTime}
+                departureTime={jobSheet.departureTime}
+                totalTime={jobSheet.totalTime}
+                technicianName={jobSheet.technicianName}
+                technicianSignature={jobSheet.technicianSignature}
+                customerName={jobSheet.customerName}
+                customerSignature={jobSheet.customerSignature}
+                companyNameInput={jobSheet.companyName}
+                companyAddress={jobSheet.companyAddress}
+                companyTelephone={jobSheet.companyTelephone}
+                contactNameInput={jobSheet.contact.name}
+                contactCellphoneInput={jobSheet.contact.cellphone}
+                contactEmailInput={jobSheet.contact.email}
+                date={jobSheet.date}
+                jobNumber={jobSheet.jobNumber}
+            />
+        </Paper>
+      </Slide>
     </Container>
   );
 }

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Container, TextField, Button, Box, IconButton } from '@mui/material';
+import { Typography, Container, Button, Box } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, addDoc, collection } from 'firebase/firestore';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
 import toast from 'react-hot-toast';
+import CompanyProfileForm from './CompanyProfileForm';
 
 function EditCompanyProfilePage({ viewMode = false }) {
   const { id } = useParams();
@@ -34,22 +33,6 @@ function EditCompanyProfilePage({ viewMode = false }) {
     }
   }, [id]);
 
-  const handleContactChange = (index, event) => {
-    const values = [...contacts];
-    values[index][event.target.name] = event.target.value;
-    setContacts(values);
-  };
-
-  const handleAddContact = () => {
-    setContacts([...contacts, { name: '', email: '', cellphone: '' }]);
-  };
-
-  const handleRemoveContact = (index) => {
-    const values = [...contacts];
-    values.splice(index, 1);
-    setContacts(values);
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     const profileData = { companyName, companyAddress, companyTelephone, contacts };
@@ -71,97 +54,24 @@ function EditCompanyProfilePage({ viewMode = false }) {
   return (
     <Container maxWidth="md">
       <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-        <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+        <Button variant="outlined" onClick={() => navigate('/company-profiles')}>Back</Button>
       </Box>
       <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
         {pageTitle}
       </Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          id="companyName"
-          label="Company Name"
-          fullWidth
-          margin="normal"
-          value={companyName}
-          onChange={(e) => setCompanyName(e.target.value)}
-          disabled={viewMode}
-        />
-        <TextField
-          id="companyAddress"
-          label="Company Address"
-          fullWidth
-          margin="normal"
-          value={companyAddress}
-          onChange={(e) => setCompanyAddress(e.target.value)}
-          disabled={viewMode}
-        />
-        <TextField
-          id="companyTelephone"
-          label="Company Telephone"
-          fullWidth
-          margin="normal"
-          value={companyTelephone}
-          onChange={(e) => setCompanyTelephone(e.target.value)}
-          disabled={viewMode}
-        />
-        <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 2 }}>
-          Contacts
-        </Typography>
-        {contacts.map((contact, index) => (
-          <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <TextField
-              id={`contact-name-${index}`}
-              label="Name"
-              name="name"
-              value={contact.name}
-              onChange={(e) => handleContactChange(index, e)}
-              sx={{ mr: 1 }}
-              disabled={viewMode}
-            />
-            <TextField
-              id={`contact-email-${index}`}
-              label="Email"
-              name="email"
-              type="email"
-              value={contact.email}
-              onChange={(e) => handleContactChange(index, e)}
-              sx={{ mr: 1 }}
-              disabled={viewMode}
-            />
-            <TextField
-              id={`contact-cellphone-${index}`}
-              label="Cellphone"
-              name="cellphone"
-              value={contact.cellphone}
-              onChange={(e) => handleContactChange(index, e)}
-              sx={{ mr: 1 }}
-              disabled={viewMode}
-            />
-            {!viewMode && (
-              <IconButton onClick={() => handleRemoveContact(index)}>
-                <DeleteIcon />
-              </IconButton>
-            )}
-          </Box>
-        ))}
-        {!viewMode && (
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={handleAddContact}
-            sx={{ mb: 2 }}
-          >
-            Add Contact
-          </Button>
-        )}
-        {!viewMode && (
-          <Box sx={{ mt: 2 }}>
-            <Button type="submit" variant="contained" color="primary">
-              {id ? 'Save Changes' : 'Create Profile'}
-            </Button>
-          </Box>
-        )}
-      </form>
+      <CompanyProfileForm
+        companyName={companyName}
+        setCompanyName={setCompanyName}
+        companyAddress={companyAddress}
+        setCompanyAddress={setCompanyAddress}
+        companyTelephone={companyTelephone}
+        setCompanyTelephone={setCompanyTelephone}
+        contacts={contacts}
+        setContacts={setContacts}
+        handleSubmit={handleSubmit}
+        viewMode={viewMode}
+        id={id}
+      />
     </Container>
   );
 }

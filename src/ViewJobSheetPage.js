@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography, Collapse } from '@mui/material';
+import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Box, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputLabel, Typography, useTheme } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { db } from './firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { FlashOn } from '@mui/icons-material';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
+import JobSheetRow from './JobSheetRow';
 
 function ViewJobSheetPage() {
   const { user } = useContext(AuthContext);
@@ -24,8 +27,63 @@ function ViewJobSheetPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [openRows, setOpenRows] = useState({});
   const [isSubmenu, setIsSubmenu] = useState(false);
+  const [openJobsSortField, setOpenJobsSortField] = useState('jobNumber');
+  const [openJobsSortDirection, setOpenJobsSortDirection] = useState('asc');
+  const [completedJobsSortField, setCompletedJobsSortField] = useState('jobNumber');
+  const [completedJobsSortDirection, setCompletedJobsSortDirection] = useState('asc');
+  const theme = useTheme();
 
   const navigate = useNavigate();
+
+  const handleOpenJobsSort = (field) => {
+    if (openJobsSortField === field) {
+      setOpenJobsSortDirection(openJobsSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOpenJobsSortField(field);
+      setOpenJobsSortDirection('asc');
+    }
+  };
+
+  const handleCompletedJobsSort = (field) => {
+    if (completedJobsSortField === field) {
+      setCompletedJobsSortDirection(completedJobsSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCompletedJobsSortField(field);
+      setCompletedJobsSortDirection('asc');
+    }
+  };
+
+  const sortData = (data, field, direction) => {
+    if (!field) {
+      return data;
+    }
+
+    return [...data].sort((a, b) => {
+      let aValue = a[field];
+      let bValue = b[field];
+
+      // Handle specific field types if necessary (e.g., dates, numbers)
+      if (field === 'date') {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      } else if (field === 'jobNumber' || field === 'orderValue' || field === 'invoiceNumber') {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else {
+        // Default to string comparison for other fields
+        aValue = String(aValue).toLowerCase();
+        bValue = String(bValue).toLowerCase();
+      }
+
+      if (aValue < bValue) {
+        return direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
 
     useEffect(() => {
     const fetchJobSheets = async () => {
@@ -55,14 +113,14 @@ function ViewJobSheetPage() {
 
   const handleView = (sheet) => {
     if (sheet) {
-      navigate(`/job-sheet/${sheet.id}`);
+      navigate(`/job-sheet/${sheet.id}`, { state: { direction: 'up' } });
       handleMenuClose();
     }
   };
 
   const handleEdit = (sheet) => {
     if (sheet) {
-      navigate(`/job-sheet/edit/${sheet.id}`);
+      navigate(`/job-sheet/edit/${sheet.id}`, { state: { direction: 'up' } });
       handleMenuClose();
     }
   };
@@ -222,10 +280,40 @@ function ViewJobSheetPage() {
     }
   });
 
+  const sortedFilteredJobSheets = sortData(filteredJobSheets, openJobsSortField, openJobsSortDirection);
+
+  const groupedFilteredJobSheets = [];
+  let currentJobNumberFiltered = null;
+  for (const sheet of sortedFilteredJobSheets) {
+    if (sheet.jobNumber !== currentJobNumberFiltered) {
+      groupedFilteredJobSheets.push([]);
+      currentJobNumberFiltered = sheet.jobNumber;
+    }
+    groupedFilteredJobSheets[groupedFilteredJobSheets.length - 1].push(sheet);
+  }
+
+  const sortedInvoicedJobSheets = sortData(invoicedJobSheets, completedJobsSortField, completedJobsSortDirection);
+
+  const groupedInvoicedJobSheets = [];
+  let currentJobNumberInvoiced = null;
+  for (const sheet of sortedInvoicedJobSheets) {
+    if (sheet.jobNumber !== currentJobNumberInvoiced) {
+      groupedInvoicedJobSheets.push([]);
+      currentJobNumberInvoiced = sheet.jobNumber;
+    }
+    groupedInvoicedJobSheets[groupedInvoicedJobSheets.length - 1].push(sheet);
+  }
+
+  const toggleRow = (jobNumber) => {
+    setOpenRows(prevOpenRows => ({ ...prevOpenRows, [jobNumber]: !prevOpenRows[jobNumber] }));
+  };
+
+  
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-        <Button variant="outlined" onClick={() => navigate(-1)}>Back</Button>
+        <Button variant="outlined" onClick={() => navigate('/')}>Back</Button>
 
       </Box>
       <TextField
@@ -243,98 +331,71 @@ function ViewJobSheetPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Job Number</TableCell>
-              <TableCell>Order</TableCell>
-              <TableCell>Company Name</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Technician</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell sx={{ width: '15%' }} onClick={() => handleOpenJobsSort('jobNumber')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Job Number
+                  {openJobsSortField === 'jobNumber' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '15%' }} onClick={() => handleOpenJobsSort('date')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Date
+                  {openJobsSortField === 'date' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '25%' }} onClick={() => handleOpenJobsSort('companyName')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Client
+                  {openJobsSortField === 'companyName' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '15%' }} onClick={() => handleOpenJobsSort('orderValue')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Order
+                  {openJobsSortField === 'orderValue' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '15%' }} onClick={() => handleOpenJobsSort('technicianName')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Technician
+                  {openJobsSortField === 'technicianName' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '15%' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.entries(
-              filteredJobSheets.reduce((acc, sheet) => {
-                if (!acc[sheet.jobNumber]) {
-                  acc[sheet.jobNumber] = [];
-                }
-                acc[sheet.jobNumber].push(sheet);
-                return acc;
-              }, {})
-            ).map(([jobNumber, sheets]) => {
+            {groupedFilteredJobSheets.map((sheets) => {
               const multipleOrderTypes = new Set(sheets.map(s => s.orderType)).size > 1;
               return (
-              <React.Fragment key={jobNumber}>
-                <TableRow>
-                  <TableCell>
+              <React.Fragment key={sheets[0].jobNumber}>
+                <TableRow sx={{ backgroundColor: 'inherit' }}>
+                  <TableCell sx={{ width: '15%' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <IconButton
                         aria-label="expand row"
                         size="small"
-                        onClick={() => {
-                          if (sheets.length > 1) {
-                            const newOpenRows = { ...openRows };
-                            newOpenRows[jobNumber] = !newOpenRows[jobNumber];
-                            setOpenRows(newOpenRows);
-                          }
-                        }}
+                        onClick={() => toggleRow(sheets[0].jobNumber)}
                         style={{ visibility: sheets.length > 1 ? 'visible' : 'hidden' }}
                       >
-                        {openRows[jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                        {openRows[sheets[0].jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                       </IconButton>
-                      {jobNumber}
+                      {sheets[0].jobNumber}
                     </Box>
                   </TableCell>
-                  <TableCell>{multipleOrderTypes ? '~' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
-                  <TableCell>{sheets[0].companyName}</TableCell>
-                  <TableCell>{formatDate(sheets[0].date)}</TableCell>
-                  <TableCell>{sheets[0].technicianName}</TableCell>
-                  <TableCell>{sheets[0].status}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ width: '15%' }}>{formatDate(sheets[0].date)}</TableCell>
+                  <TableCell sx={{ width: '25%' }}>{sheets[0].companyName}</TableCell>
+                  <TableCell sx={{ width: '15%' }}>{multipleOrderTypes ? 'Multi-Sheet' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
+                  <TableCell sx={{ width: '15%' }}>{sheets[0].technicianName}</TableCell>
+                  <TableCell sx={{ width: '15%' }}>
                     <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
                       <FlashOn />
                     </IconButton>
                   </TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-                    <Collapse in={openRows[jobNumber]} timeout="auto" unmountOnExit>
-                      <Box sx={{ margin: 1 }}>
-                        
-                        <Table size="small" aria-label="purchases">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell />
-                              <TableCell>Order</TableCell>
-                              <TableCell />
-                              <TableCell>Date</TableCell>
-                              <TableCell>Technician</TableCell>
-                              <TableCell />
-                              <TableCell>Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {sheets.map((historyRow) => (
-                              <TableRow key={historyRow.id}>
-                                <TableCell />
-                                <TableCell>{historyRow.orderType === 'S.L.A' ? 'S.L.A' : historyRow.orderValue}</TableCell>
-                                <TableCell />
-                                <TableCell>{formatDate(historyRow.date)}</TableCell>
-                                <TableCell>{historyRow.technicianName}</TableCell>
-                                <TableCell />
-                                <TableCell>
-                                  <IconButton onClick={(e) => handleMenuClick(e, historyRow, true)}>
-                                    <FlashOn />
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </Box>
-                    </Collapse>
-                  </TableCell>
-                </TableRow>
+                {openRows[sheets[0].jobNumber] && sheets.map((sheet) => (
+                  <JobSheetRow key={sheet.id} sheet={sheet} handleMenuClick={handleMenuClick} formatDate={formatDate} theme={theme} isCompletedJobsTable={false} />
+                ))}
               </React.Fragment>
             )})}
           </TableBody>
@@ -350,42 +411,58 @@ function ViewJobSheetPage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Job Number</TableCell>
-                  <TableCell>Order</TableCell>
-                  <TableCell>Company Name</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Technician</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Invoice #</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell sx={{ width: '14%' }} onClick={() => handleCompletedJobsSort('jobNumber')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Job Number
+                      {completedJobsSortField === 'jobNumber' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '14%' }} onClick={() => handleCompletedJobsSort('date')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Date
+                      {completedJobsSortField === 'date' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '22%' }} onClick={() => handleCompletedJobsSort('companyName')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Client
+                      {completedJobsSortField === 'companyName' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '14%' }} onClick={() => handleCompletedJobsSort('orderValue')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Order
+                      {completedJobsSortField === 'orderValue' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '14%' }} onClick={() => handleCompletedJobsSort('technicianName')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Technician
+                      {completedJobsSortField === 'technicianName' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '9%' }} onClick={() => handleCompletedJobsSort('invoiceNumber')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Invoice #
+                      {completedJobsSortField === 'invoiceNumber' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '13%' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Object.entries(
-                  invoicedJobSheets.reduce((acc, sheet) => {
-                    if (!acc[sheet.jobNumber]) {
-                      acc[sheet.jobNumber] = [];
-                    }
-                    acc[sheet.jobNumber].push(sheet);
-                    return acc;
-                  }, {})
-                ).map(([jobNumber, sheets]) => {
+                {groupedInvoicedJobSheets.map((sheets) => {
+                  const jobNumber = sheets[0].jobNumber; // Get jobNumber from the first sheet in the group
                   const multipleOrderTypes = new Set(sheets.map(s => s.orderType)).size > 1;
                   return (
                   <React.Fragment key={jobNumber}>
-                    <TableRow>
-                      <TableCell>
+                    <TableRow sx={{ backgroundColor: 'inherit' }}>
+                      <TableCell sx={{ width: '14%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <IconButton
                             aria-label="expand row"
                             size="small"
-                            onClick={() => {
-                              if (sheets.length > 1) {
-                                const newOpenRows = { ...openRows };
-                                newOpenRows[jobNumber] = !newOpenRows[jobNumber];
-                                setOpenRows(newOpenRows);
-                              }
-                            }}
+                            onClick={() => toggleRow(jobNumber)}
                             style={{ visibility: sheets.length > 1 ? 'visible' : 'hidden' }}
                           >
                             {openRows[jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
@@ -393,58 +470,20 @@ function ViewJobSheetPage() {
                           {jobNumber}
                         </Box>
                       </TableCell>
-                      <TableCell>{multipleOrderTypes ? '~' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
-                      <TableCell>{sheets[0].companyName}</TableCell>
-                      <TableCell>{formatDate(sheets[0].date)}</TableCell>
-                      <TableCell>{sheets[0].technicianName}</TableCell>
-                      <TableCell>{sheets[0].status}</TableCell>
-                      <TableCell>{sheets[0].invoiceNumber}</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ width: '14%' }}>{formatDate(sheets[0].date)}</TableCell>
+                      <TableCell sx={{ width: '22%' }}>{sheets[0].companyName}</TableCell>
+                      <TableCell sx={{ width: '14%' }}>{multipleOrderTypes ? 'Multi-Sheet' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
+                      <TableCell sx={{ width: '14%' }}>{sheets[0].technicianName}</TableCell>
+                      <TableCell sx={{ width: '9%' }}>{sheets[0].invoiceNumber}</TableCell>
+                      <TableCell sx={{ width: '13%' }}>
                         <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
                           <FlashOn />
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                    <TableRow>
-                      <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
-                        <Collapse in={openRows[jobNumber]} timeout="auto" unmountOnExit>
-                          <Box sx={{ margin: 1 }}>
-                            <Table size="small" aria-label="purchases">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell />
-                                  <TableCell>Order</TableCell>
-                                  <TableCell />
-                                  <TableCell>Date</TableCell>
-                                  <TableCell>Technician</TableCell>
-                                  <TableCell />
-                                  <TableCell>Invoice #</TableCell>
-                                  <TableCell>Actions</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {sheets.map((historyRow) => (
-                                  <TableRow key={historyRow.id}>
-                                    <TableCell />
-                                    <TableCell>{historyRow.orderType === 'S.L.A' ? 'S.L.A' : historyRow.orderValue}</TableCell>
-                                    <TableCell />
-                                    <TableCell>{formatDate(historyRow.date)}</TableCell>
-                                    <TableCell>{historyRow.technicianName}</TableCell>
-                                    <TableCell />
-                                    <TableCell>{historyRow.invoiceNumber}</TableCell>
-                                    <TableCell>
-                                      <IconButton onClick={(e) => handleMenuClick(e, historyRow, true)}>
-                                        <FlashOn />
-                                      </IconButton>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        </Collapse>
-                      </TableCell>
-                    </TableRow>
+                    {openRows[sheets[0].jobNumber] && sheets.map((sheet) => (
+                      <JobSheetRow key={sheet.id} sheet={sheet} handleMenuClick={handleMenuClick} formatDate={formatDate} theme={theme} isCompletedJobsTable={true} />
+                    ))}
                   </React.Fragment>
                 )})}
               </TableBody>

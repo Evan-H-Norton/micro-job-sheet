@@ -74,7 +74,7 @@ function CompanyProfilesPage() {
 
   return (
     <Container maxWidth="md">
-      <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mt: 2, mb: 2 }}>Back</Button>
+      <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
       <Box sx={{ textAlign: 'center', mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Company Profiles

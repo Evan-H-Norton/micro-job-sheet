@@ -68,7 +68,7 @@ function ProfilePage() {
 
   return (
     <Container maxWidth="md">
-      <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mt: 2, mb: 2 }}>Back</Button>
+      <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
       <Paper sx={{ p: 2, mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
           User Profile

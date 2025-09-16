@@ -3,7 +3,6 @@ import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
 import { ThemeProvider } from '@mui/material/styles';
 import { AppBar, Toolbar, Typography, IconButton, CssBaseline, Menu, MenuItem } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import AccountCircle from '@mui/icons-material/AccountCircle';
@@ -66,8 +65,12 @@ function Navigation() {
             color="inherit"
             aria-label="menu"
             sx={{ mr: 2 }}
+            onClick={(e) => {
+              navigate('/');
+              e.currentTarget.blur();
+            }}
           >
-            <MenuIcon />
+            <img src="/logo512.png" alt="logo" width="40" height="40" />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Micro Job Sheet
