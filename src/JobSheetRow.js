@@ -20,14 +20,17 @@ function JobSheetRow({ sheet, handleMenuClick, formatDate, theme, isCompletedJob
             <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '14%' : '15%' }}>{sheet.orderType === 'S.L.A' ? 'S.L.A' : sheet.orderValue}</TableCell>
 
             {/* Technician - always empty in child row */}
-            <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '14%' : '15%' }} />
+            <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '10%' : '15%' }} />
 
             {/* Invoice # (only for Completed Jobs Table) */}
             {isCompletedJobsTable && <TableCell sx={{ border: 0, width: '9%' }}>{sheet.invoiceNumber}</TableCell>}
 
+            {/* Status */}
+            <TableCell sx={{ border: 0, width: '10%' }}>{sheet.status}</TableCell>
+
             {/* Actions */}
-            <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '13%' : '15%' }}>
-                <IconButton onClick={(e) => handleMenuClick(e, sheet, true)}>
+            <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '7%' : '5%' }}>
+                <IconButton onClick={(e) => handleMenuClick(e, sheet, true, isCompletedJobsTable)}>
                     <FlashOn />
                 </IconButton>
             </TableCell>

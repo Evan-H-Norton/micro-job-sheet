@@ -33,6 +33,9 @@ function EditJobSheetPage() {
     const [orderType, setOrderType] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [outstanding, setOutstanding] = useState('');
+    const [status, setStatus] = useState('');
+    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [initialInvoiceNumber, setInitialInvoiceNumber] = useState('');
     const [jobSheets, setJobSheets] = useState([]);
     const [currentSheetIndex, setCurrentSheetIndex] = useState(0);
     const location = useLocation();
@@ -91,6 +94,9 @@ function EditJobSheetPage() {
                 setOrderType(data.orderType || 'Order #');
                 setTasks(data.tasks || []);
                 setOutstanding(data.outstanding || '');
+                setStatus(data.status || 'Open');
+                setInvoiceNumber(data.invoiceNumber || '');
+                setInitialInvoiceNumber(data.invoiceNumber || '');
 
                 const jobSheetsCollection = collection(db, 'jobSheets');
                 const jobSheetsSnapshot = await getDocs(jobSheetsCollection);
@@ -224,9 +230,22 @@ function EditJobSheetPage() {
             customerSignature,
             tasks,
             outstanding,
+            invoiceNumber,
         };
 
-        const promise = updateDoc(jobSheetRef, jobSheetData);
+        const updatePromises = [updateDoc(jobSheetRef, jobSheetData)];
+
+        if (invoiceNumber !== initialInvoiceNumber) {
+            const otherSheetsToUpdate = jobSheets.filter(sheet => sheet.id !== id);
+            if (otherSheetsToUpdate.length > 0) {
+                otherSheetsToUpdate.forEach(sheet => {
+                    const otherSheetRef = doc(db, 'jobSheets', sheet.id);
+                    updatePromises.push(updateDoc(otherSheetRef, { invoiceNumber }));
+                });
+            }
+        }
+
+        const promise = Promise.all(updatePromises);
 
         toast.promise(promise, {
             loading: 'Updating job sheet...',
@@ -275,6 +294,9 @@ function EditJobSheetPage() {
                         setTasks={setTasks}
                         outstanding={outstanding}
                         setOutstanding={setOutstanding}
+                        status={status}
+                        invoiceNumber={invoiceNumber}
+                        setInvoiceNumber={setInvoiceNumber}
                         faultComplaint={faultComplaint}
                         setFaultComplaint={setFaultComplaint}
                         workCarriedOut={workCarriedOut}

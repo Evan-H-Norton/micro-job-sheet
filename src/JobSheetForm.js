@@ -15,6 +15,9 @@ function JobSheetForm({
     setTasks,
     outstanding,
     setOutstanding,
+    status,
+    invoiceNumber,
+    setInvoiceNumber,
     faultComplaint,
     setFaultComplaint,
     workCarriedOut,
@@ -380,6 +383,21 @@ function JobSheetForm({
                 )}
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
+
+                {(status === 'Pending Invoice' || status === 'Invoiced') && (
+                    <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                id="invoiceNumber"
+                                label="Invoice Number"
+                                fullWidth
+                                value={invoiceNumber}
+                                onChange={(e) => setInvoiceNumber(e.target.value)}
+                                InputProps={{ readOnly: viewMode }}
+                            />
+                        </Grid>
+                    </Grid>
+                )}
 
                 <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                     <Grid item xs={12} sm={6}>

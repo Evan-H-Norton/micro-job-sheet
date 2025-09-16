@@ -27,6 +27,7 @@ function ViewJobSheetPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [openRows, setOpenRows] = useState({});
   const [isSubmenu, setIsSubmenu] = useState(false);
+  const [isCompletedMenu, setIsCompletedMenu] = useState(false);
   const [openJobsSortField, setOpenJobsSortField] = useState('jobNumber');
   const [openJobsSortDirection, setOpenJobsSortDirection] = useState('asc');
   const [completedJobsSortField, setCompletedJobsSortField] = useState('jobNumber');
@@ -100,15 +101,17 @@ function ViewJobSheetPage() {
     setInvoicedJobSheets(filteredCompleted);
   }, [jobSheets]);
 
-  const handleMenuClick = (event, sheet, isSub = false) => {
+  const handleMenuClick = (event, sheet, isSub = false, isCompleted = false) => {
     setAnchorEl(event.currentTarget);
     setSelectedSheet(sheet);
     setIsSubmenu(isSub);
+    setIsCompletedMenu(isCompleted);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedSheet(null);
+    setIsCompletedMenu(false);
   };
 
   const handleView = (sheet) => {
@@ -183,8 +186,30 @@ function ViewJobSheetPage() {
     const sheetsToUpdate = jobSheets.filter(sheet => sheet.jobNumber === selectedSheet.jobNumber);
 
     if (newStatus === 'Invoiced') {
-      setStatusDialogOpen(false);
-      setInvoiceDialogOpen(true);
+      if (selectedSheet.invoiceNumber) {
+        const promises = sheetsToUpdate.map(sheet => {
+          const jobSheetRef = doc(db, 'jobSheets', sheet.id);
+          return updateDoc(jobSheetRef, { status: 'Invoiced' });
+        });
+
+        const promise = Promise.all(promises);
+
+        toast.promise(promise, {
+          loading: 'Updating status...',
+          success: () => {
+            const updatedJobSheets = jobSheets.map(sheet =>
+              sheet.jobNumber === selectedSheet.jobNumber ? { ...sheet, status: 'Invoiced' } : sheet
+            );
+            setJobSheets(updatedJobSheets);
+            handleStatusDialogClose();
+            return 'Status updated successfully!';
+          },
+          error: (err) => `Failed to update status: ${err.toString()}`,
+        });
+      } else {
+        setStatusDialogOpen(false);
+        setInvoiceDialogOpen(true);
+      }
     } else {
       const promises = sheetsToUpdate.map(sheet => {
         const jobSheetRef = doc(db, 'jobSheets', sheet.id);
@@ -361,7 +386,13 @@ function ViewJobSheetPage() {
                   {openJobsSortField === 'technicianName' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
                 </Box>
               </TableCell>
-              <TableCell sx={{ width: '15%' }}>Actions</TableCell>
+              <TableCell sx={{ width: '10%' }} onClick={() => handleOpenJobsSort('status')}>
+                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  Status
+                  {openJobsSortField === 'status' && (openJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '5%' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -387,8 +418,9 @@ function ViewJobSheetPage() {
                   <TableCell sx={{ width: '25%' }}>{sheets[0].companyName}</TableCell>
                   <TableCell sx={{ width: '15%' }}>{multipleOrderTypes ? 'Multi-Sheet' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
                   <TableCell sx={{ width: '15%' }}>{sheets[0].technicianName}</TableCell>
-                  <TableCell sx={{ width: '15%' }}>
-                    <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
+                  <TableCell sx={{ width: '10%' }}>{sheets[0].status}</TableCell>
+                  <TableCell sx={{ width: '5%' }}>
+                    <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false, false)}>
                       <FlashOn />
                     </IconButton>
                   </TableCell>
@@ -447,7 +479,13 @@ function ViewJobSheetPage() {
                       {completedJobsSortField === 'invoiceNumber' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ width: '13%' }}>Actions</TableCell>
+                  <TableCell sx={{ width: '10%' }} onClick={() => handleCompletedJobsSort('status')}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      Status
+                      {completedJobsSortField === 'status' && (completedJobsSortDirection === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />)}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ width: '7%' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -475,8 +513,9 @@ function ViewJobSheetPage() {
                       <TableCell sx={{ width: '14%' }}>{multipleOrderTypes ? 'Multi-Sheet' : (sheets[0].orderType === 'S.L.A' ? 'S.L.A' : sheets[0].orderValue)}</TableCell>
                       <TableCell sx={{ width: '14%' }}>{sheets[0].technicianName}</TableCell>
                       <TableCell sx={{ width: '9%' }}>{sheets[0].invoiceNumber}</TableCell>
-                      <TableCell sx={{ width: '13%' }}>
-                        <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false)}>
+                      <TableCell sx={{ width: '10%' }}>{sheets[0].status}</TableCell>
+                      <TableCell sx={{ width: '7%' }}>
+                        <IconButton onClick={(e) => handleMenuClick(e, sheets[0], false, true)}>
                           <FlashOn />
                         </IconButton>
                       </TableCell>
@@ -498,12 +537,12 @@ function ViewJobSheetPage() {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => handleView(selectedSheet)}>View</MenuItem>
-        {selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>}
-        {selectedSheet?.status !== 'Invoiced' && !isSubmenu && <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>}
-        {isSubmenu && <MenuItem onClick={() => handleDeleteClick(selectedSheet)} sx={{ color: 'error.main' }}>Delete</MenuItem>}
-        {!isSubmenu && <MenuItem onClick={() => handleCancelClick(selectedSheet)} sx={{ color: 'error.main' }}>Cancel</MenuItem>}
+        {!isCompletedMenu && selectedSheet?.status !== 'Invoiced' && <MenuItem onClick={() => handleEdit(selectedSheet)}>Edit</MenuItem>}
+        {!isCompletedMenu && selectedSheet?.status !== 'Invoiced' && !isSubmenu && <MenuItem onClick={() => handleUpdateStatus(selectedSheet)}>Update Status</MenuItem>}
+        {!isCompletedMenu && isSubmenu && <MenuItem onClick={() => handleDeleteClick(selectedSheet)} sx={{ color: 'error.main' }}>Delete</MenuItem>}
+        {!isCompletedMenu && !isSubmenu && <MenuItem onClick={() => handleCancelClick(selectedSheet)} sx={{ color: 'error.main' }}>Cancel</MenuItem>}
       </Menu>
-      <Dialog open={statusDialogOpen} onClose={handleStatusDialogClose}>
+      <Dialog open={statusDialogOpen} onClose={handleStatusDialogClose} fullWidth maxWidth="sm">
         <DialogTitle>Update Status</DialogTitle>
         <DialogContent>
           <InputLabel id="status-select-label">Status</InputLabel>

@@ -57,9 +57,11 @@ function JobSheetDetailsPage() {
 
   return (
     <Container maxWidth="md">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
-        <Button variant="outlined" onClick={() => navigate('/view-job-sheet')}>Back</Button>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', my: 2 }}>
+        <Box sx={{ justifySelf: 'start' }}>
+          <Button variant="outlined" onClick={() => navigate('/view-job-sheet')}>Back</Button>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifySelf: 'center' }}>
             <Button variant="outlined" onClick={() => handleNavigateSheet(-1)} disabled={currentSheetIndex === 0}>
                 <ArrowBack />
             </Button>
@@ -68,7 +70,11 @@ function JobSheetDetailsPage() {
                 <ArrowForward />
             </Button>
         </Box>
-        <Button variant="contained" onClick={() => navigate(`/job-sheet/edit/${id}`, { state: { direction: 'up' } })}>{isSmallScreen ? '+' : 'Edit'}</Button>
+        <Box sx={{ justifySelf: 'end' }}>
+          {jobSheet.status !== 'Invoiced' && jobSheet.status !== 'Cancelled' && (
+            <Button variant="contained" onClick={() => navigate(`/job-sheet/edit/${id}`, { state: { direction: 'up' } })}>{isSmallScreen ? '+' : 'Edit'}</Button>
+          )}
+        </Box>
       </Box>
       <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
