@@ -9,6 +9,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
 import { ArrowBack, ArrowForward, FlashOn, CameraAlt as CameraAltIcon, UploadFile as UploadFileIcon, FlashOn as FlashOnIcon } from '@mui/icons-material';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import JobSheetForm from './JobSheetForm';
 
 function EditJobSheetPage() {
@@ -608,7 +609,11 @@ function EditJobSheetPage() {
             <Dialog open={!!viewDoc} onClose={handleViewClose}>
                 <DialogTitle>{viewDoc?.name}</DialogTitle>
                 <DialogContent>
-                    <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+                    <TransformWrapper>
+                        <TransformComponent>
+                            <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+                        </TransformComponent>
+                    </TransformWrapper>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleViewClose}>Close</Button>

@@ -8,6 +8,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowBack, ArrowForward, FlashOn as FlashOnIcon } from '@mui/icons-material';
 
 import JobSheetForm from './JobSheetForm';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 
 function JobSheetDetailsPage() {
@@ -280,7 +281,11 @@ function JobSheetDetailsPage() {
       <Dialog open={!!viewDoc} onClose={handleViewClose}>
         <DialogTitle>{viewDoc?.name}</DialogTitle>
         <DialogContent>
-          <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+          <TransformWrapper>
+            <TransformComponent>
+              <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+            </TransformComponent>
+          </TransformWrapper>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleViewClose}>Close</Button>
