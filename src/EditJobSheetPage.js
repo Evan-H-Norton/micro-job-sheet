@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Button, Box, useMediaQuery, Slide, Paper, Menu, MenuItem } from '@mui/material';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import imageCompression from 'browser-image-compression';
+import { Button, Box, useMediaQuery, Slide, Paper, Menu, MenuItem, Dialog, DialogTitle, DialogContent, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, DialogActions } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, addDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
-import { ArrowBack, ArrowForward, FlashOn } from '@mui/icons-material';
+import { ArrowBack, ArrowForward, FlashOn, CameraAlt as CameraAltIcon, UploadFile as UploadFileIcon, FlashOn as FlashOnIcon } from '@mui/icons-material';
 import JobSheetForm from './JobSheetForm';
 
 function EditJobSheetPage() {
     const orderTypeInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
     const { id } = useParams();
     const [companies, setCompanies] = useState([]);
     const [companyNameInput, setCompanyNameInput] = useState('');
@@ -41,6 +44,12 @@ function EditJobSheetPage() {
     const location = useLocation();
     const slideDirection = location.state?.direction || 'up';
     const [anchorEl, setAnchorEl] = useState(null);
+    const [openDocumentsDialog, setOpenDocumentsDialog] = useState(false);
+    const [documents, setDocuments] = useState([]);
+    const [renameDoc, setRenameDoc] = useState(null);
+    const [newDocName, setNewDocName] = useState('');
+    const [viewDoc, setViewDoc] = useState(null);
+    const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
     
     
     const { user } = useContext(AuthContext);
@@ -78,7 +87,7 @@ function EditJobSheetPage() {
                 setCompanyAddress(data.companyAddress || '');
                 setCompanyTelephone(data.companyTelephone || '');
                 setContactNameInput(data.contact?.name || '');
-                setContactCellphoneInput(data.contact?.cellphone || '');
+                setContactCellphoneInput(data.contact?.cellPhone || '');
                 setContactEmailInput(data.contact?.email || '');
                 setJobNumber(data.jobNumber || '');
                 setOrderValue(data.orderValue || '');
@@ -125,6 +134,21 @@ function EditJobSheetPage() {
         };
         fetchJobSheet();
     }, [id]);
+
+    const fetchDocuments = useCallback(async () => {
+        if (jobNumber) {
+            const documentsCollection = collection(db, 'documents');
+            const q = query(documentsCollection, where('jobNumber', '==', jobNumber));
+            const documentsSnapshot = await getDocs(q);
+            setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+    }, [jobNumber]);
+
+    useEffect(() => {
+        if (openDocumentsDialog && jobNumber) {
+            fetchDocuments();
+        }
+    }, [openDocumentsDialog, jobNumber, fetchDocuments]);
 
     useEffect(() => {
         if (selectedCompany) {
@@ -215,6 +239,11 @@ function EditJobSheetPage() {
         handleMenuClose();
     };
 
+    const handleViewDocuments = () => {
+        setOpenDocumentsDialog(true);
+        handleMenuClose();
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         const jobSheetRef = doc(db, 'jobSheets', id);
@@ -276,6 +305,116 @@ function EditJobSheetPage() {
         }
     };
 
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+        };
+
+        try {
+            const compressedFile = await imageCompression(file, options);
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
+            reader.onload = async () => {
+                const base64 = reader.result;
+                await addDoc(collection(db, 'documents'), {
+                    jobNumber: jobNumber,
+                    name: file.name,
+                    fileType: file.type,
+                    base64: base64,
+                    uploadedAt: new Date(),
+                });
+                fetchDocuments();
+            };
+            reader.onerror = (error) => {
+                console.error("Error reading file: ", error);
+                toast.error("Error reading file.");
+            };
+        } catch (error) {
+            console.error('Error compressing image:', error);
+            toast.error('Error compressing image.');
+        }
+    };
+
+    const handleCameraUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+        };
+
+        try {
+            const compressedFile = await imageCompression(file, options);
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
+            reader.onload = async () => {
+                const base64 = reader.result;
+                await addDoc(collection(db, 'documents'), {
+                    jobNumber: jobNumber,
+                    name: `camera_${Date.now()}_${file.name}`,
+                    fileType: file.type,
+                    base64: base64,
+                    uploadedAt: new Date(),
+                });
+                fetchDocuments();
+                if (cameraInputRef.current) {
+                    cameraInputRef.current.value = '';
+                }
+            };
+            reader.onerror = (error) => {
+                console.error("Error reading file: ", error);
+                toast.error("Error reading file.");
+            };
+        } catch (error) {
+            console.error('Error compressing image:', error);
+            toast.error('Error compressing image.');
+        }
+    };
+
+    const handleDelete = async (docId) => {
+        await deleteDoc(doc(db, 'documents', docId));
+        fetchDocuments();
+    };
+
+    const handleRename = (doc) => {
+        setRenameDoc(doc);
+        setNewDocName(doc.name);
+    };
+
+    const handleRenameClose = () => {
+        setRenameDoc(null);
+        setNewDocName('');
+    };
+
+    const handleRenameSave = async () => {
+        await updateDoc(doc(db, 'documents', renameDoc.id), { name: newDocName });
+        fetchDocuments();
+        handleRenameClose();
+    };
+
+    const handleView = (doc) => {
+        setViewDoc(doc);
+    };
+
+    const handleViewClose = () => {
+        setViewDoc(null);
+    };
+
+    const handleDocActionMenuClick = (event) => {
+        setDocActionAnchorEl(event.currentTarget);
+    };
+
+    const handleDocActionMenuClose = () => {
+        setDocActionAnchorEl(null);
+    };
+
     return (
         <Box sx={{ maxWidth: 'md', margin: 'auto' }}>
             <Box sx={{
@@ -307,6 +446,7 @@ function EditJobSheetPage() {
                     onClose={handleMenuClose}
                 >
                     <MenuItem onClick={handleAddSheet}>Add Sheet</MenuItem>
+                    <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
                 </Menu>
             </Box>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
@@ -372,6 +512,108 @@ function EditJobSheetPage() {
                     />
                 </Paper>
             </Slide>
+
+            <Dialog open={openDocumentsDialog} onClose={() => setOpenDocumentsDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Documents for Job # {jobNumber}
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenDocumentsDialog(false)}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                        <Button variant="contained" component="label">
+                            <CameraAltIcon />
+                            <input type="file" accept="image/*" capture="environment" hidden onChange={handleCameraUpload} ref={cameraInputRef} />
+                        </Button>
+                        <Button variant="contained" component="label">
+                            <UploadFileIcon />
+                            <input type="file" hidden onChange={handleFileUpload} />
+                        </Button>
+                    </Box>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>File Name</TableCell>
+                                    <TableCell>Uploaded At</TableCell>
+                                    <TableCell>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {documents.map((doc) => (
+                                    <TableRow key={doc.id}>
+                                        <TableCell>{doc.name}</TableCell>
+                                        <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
+                                        <TableCell>
+                                            {isSmallScreen ? (
+                                                <>
+                                                    <IconButton onClick={handleDocActionMenuClick}>
+                                                        <FlashOnIcon />
+                                                    </IconButton>
+                                                    <Menu
+                                                        anchorEl={docActionAnchorEl}
+                                                        open={Boolean(docActionAnchorEl)}
+                                                        onClose={handleDocActionMenuClose}
+                                                    >
+                                                        <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
+                                                        <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
+                                                        <MenuItem onClick={() => { handleDelete(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
+                                                    </Menu>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
+                                                    <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
+                                                    <Button variant="outlined" onClick={() => handleDelete(doc.id)}>Delete</Button>
+                                                </>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!renameDoc} onClose={handleRenameClose}>
+                <DialogTitle>Rename Document</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="New Name"
+                        type="text"
+                        fullWidth
+                        value={newDocName}
+                        onChange={(e) => setNewDocName(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleRenameClose}>Cancel</Button>
+                    <Button onClick={handleRenameSave}>Save</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={!!viewDoc} onClose={handleViewClose}>
+                <DialogTitle>{viewDoc?.name}</DialogTitle>
+                <DialogContent>
+                    <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleViewClose}>Close</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

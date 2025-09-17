@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Button, useMediaQuery, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Box, Menu, MenuItem, Slide } from '@mui/material';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import imageCompression from 'browser-image-compression';
+import { Button, useMediaQuery, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Box, Menu, MenuItem, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc, query, where, deleteDoc } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
@@ -12,6 +16,7 @@ import JobSheetForm from './JobSheetForm';
 function NewJobSheetPage() {
     const location = useLocation();
     const orderTypeInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
     const [companies, setCompanies] = useState([]);
     const [companyNameInput, setCompanyNameInput] = useState('');
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -32,9 +37,16 @@ function NewJobSheetPage() {
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
     const [outstanding, setOutstanding] = useState('');
+    const [newJobSheetId, setNewJobSheetId] = useState(null);
+    const [openDocumentsDialog, setOpenDocumentsDialog] = useState(false);
+    const [documents, setDocuments] = useState([]);
     const slideDirection = location.state?.direction || 'up';
     const [confirmNewCompanyDialogOpen, setConfirmNewCompanyDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
+    const [renameDoc, setRenameDoc] = useState(null);
+    const [newDocName, setNewDocName] = useState('');
+    const [viewDoc, setViewDoc] = useState(null);
+    const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
 
     const taskNames = [
         'Client Logbook Check',
@@ -78,6 +90,15 @@ function NewJobSheetPage() {
         };
         fetchCompanies();
     }, []);
+
+    const fetchDocuments = useCallback(async () => {
+        if (jobNumber) {
+            const documentsCollection = collection(db, 'documents');
+            const q = query(documentsCollection, where('jobNumber', '==', jobNumber));
+            const documentsSnapshot = await getDocs(q);
+            setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+    }, [jobNumber]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -128,6 +149,12 @@ function NewJobSheetPage() {
         };
         fetchInitialData();
     }, [location.state]);
+
+    useEffect(() => {
+        if (openDocumentsDialog && jobNumber) {
+            fetchDocuments();
+        }
+    }, [openDocumentsDialog, jobNumber, fetchDocuments]);
 
     useEffect(() => {
         if (selectedCompany) {
@@ -216,7 +243,126 @@ function NewJobSheetPage() {
         handleMenuClose();
     };
 
+    const handleViewDocuments = () => {
+        if (newJobSheetId) {
+            setOpenDocumentsDialog(true);
+            handleMenuClose();
+        } else {
+            toast.error('Please create a job sheet first.');
+        }
+    };
+
     const navigate = useNavigate();
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+        };
+
+        try {
+            const compressedFile = await imageCompression(file, options);
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
+            reader.onload = async () => {
+                const base64 = reader.result;
+                await addDoc(collection(db, 'documents'), {
+                    jobNumber: jobNumber,
+                    name: file.name,
+                    fileType: file.type,
+                    base64: base64,
+                    uploadedAt: new Date(),
+                });
+                fetchDocuments();
+            };
+            reader.onerror = (error) => {
+                console.error("Error reading file: ", error);
+                toast.error("Error reading file.");
+            };
+        } catch (error) {
+            console.error('Error compressing image:', error);
+            toast.error('Error compressing image.');
+        }
+    };
+
+    const handleCameraUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+        };
+
+        try {
+            const compressedFile = await imageCompression(file, options);
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
+            reader.onload = async () => {
+                const base64 = reader.result;
+                await addDoc(collection(db, 'documents'), {
+                    jobNumber: jobNumber,
+                    name: `camera_${Date.now()}_${file.name}`,
+                    fileType: file.type,
+                    base64: base64,
+                    uploadedAt: new Date(),
+                });
+                fetchDocuments();
+                if (cameraInputRef.current) {
+                    cameraInputRef.current.value = '';
+                }
+            };
+            reader.onerror = (error) => {
+                console.error("Error reading file: ", error);
+                toast.error("Error reading file.");
+            };
+        } catch (error) {
+            console.error('Error compressing image:', error);
+            toast.error('Error compressing image.');
+        }
+    };
+
+    const handleDelete = async (docId) => {
+        await deleteDoc(doc(db, 'documents', docId));
+        fetchDocuments();
+    };
+
+    const handleRename = (doc) => {
+        setRenameDoc(doc);
+        setNewDocName(doc.name);
+    };
+
+    const handleRenameClose = () => {
+        setRenameDoc(null);
+        setNewDocName('');
+    };
+
+    const handleRenameSave = async () => {
+        await updateDoc(doc(db, 'documents', renameDoc.id), { name: newDocName });
+        fetchDocuments();
+        handleRenameClose();
+    };
+
+    const handleView = (doc) => {
+        setViewDoc(doc);
+    };
+
+    const handleViewClose = () => {
+        setViewDoc(null);
+    };
+
+    const handleDocActionMenuClick = (event) => {
+        setDocActionAnchorEl(event.currentTarget);
+    };
+
+    const handleDocActionMenuClose = () => {
+        setDocActionAnchorEl(null);
+    };
 
     const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
         let finalCompanyId = existingCompany?.id || null;
@@ -268,17 +414,18 @@ function NewJobSheetPage() {
         };
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
-            .then(() => {
+            .then((docRef) => {
                 const countersRef = doc(db, 'counters', 'jobOrder');
                 return updateDoc(countersRef, {
                     lastJobNumber: jobNumber,
-                });
+                }).then(() => docRef.id);
             });
 
         toast.promise(promise, {
             loading: 'Creating job sheet...',
-            success: () => {
-                navigate('/');
+            success: (jobSheetId) => {
+                setNewJobSheetId(jobSheetId);
+                navigate(`/job-sheet/${jobSheetId}`, { state: { direction: 'left' } });
                 return 'Job Sheet created successfully!';
             },
             error: 'Failed to create job sheet. Please try again.',
@@ -321,6 +468,7 @@ function NewJobSheetPage() {
                     onClose={handleMenuClose}
                 >
                     <MenuItem onClick={handleAddSheet}>Add Sheet</MenuItem>
+                    <MenuItem onClick={handleViewDocuments} disabled={!newJobSheetId}>Documents</MenuItem>
                 </Menu>
             </Box>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
@@ -398,6 +546,108 @@ function NewJobSheetPage() {
                     <Button onClick={async () => { setConfirmNewCompanyDialogOpen(false); await proceedToCreateJobSheet(null, true); }} autoFocus>
                         Yes
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openDocumentsDialog} onClose={() => setOpenDocumentsDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Documents for Job # {jobNumber}
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenDocumentsDialog(false)}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                        <Button variant="contained" component="label">
+                            <CameraAltIcon />
+                            <input type="file" accept="image/*" capture="environment" hidden onChange={handleCameraUpload} ref={cameraInputRef} />
+                        </Button>
+                        <Button variant="contained" component="label">
+                            <UploadFileIcon />
+                            <input type="file" hidden onChange={handleFileUpload} />
+                        </Button>
+                    </Box>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>File Name</TableCell>
+                                    <TableCell>Uploaded At</TableCell>
+                                    <TableCell>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {documents.map((doc) => (
+                                    <TableRow key={doc.id}>
+                                        <TableCell>{doc.name}</TableCell>
+                                        <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
+                                        <TableCell>
+                                            {isSmallScreen ? (
+                                                <>
+                                                    <IconButton onClick={handleDocActionMenuClick}>
+                                                        <FlashOnIcon />
+                                                    </IconButton>
+                                                    <Menu
+                                                        anchorEl={docActionAnchorEl}
+                                                        open={Boolean(docActionAnchorEl)}
+                                                        onClose={handleDocActionMenuClose}
+                                                    >
+                                                        <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
+                                                        <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
+                                                        <MenuItem onClick={() => { handleDelete(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
+                                                    </Menu>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
+                                                    <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
+                                                    <Button variant="outlined" onClick={() => handleDelete(doc.id)}>Delete</Button>
+                                                </>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!renameDoc} onClose={handleRenameClose}>
+                <DialogTitle>Rename Document</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="New Name"
+                        type="text"
+                        fullWidth
+                        value={newDocName}
+                        onChange={(e) => setNewDocName(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleRenameClose}>Cancel</Button>
+                    <Button onClick={handleRenameSave}>Save</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={!!viewDoc} onClose={handleViewClose}>
+                <DialogTitle>{viewDoc?.name}</DialogTitle>
+                <DialogContent>
+                    <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleViewClose}>Close</Button>
                 </DialogActions>
             </Dialog>
         </Box>
