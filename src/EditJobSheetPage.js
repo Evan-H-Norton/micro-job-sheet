@@ -291,7 +291,6 @@ function EditJobSheetPage() {
         toast.promise(promise, {
             loading: 'Updating job sheet...',
             success: () => {
-                navigate('/view-job-sheet', { replace: true });
                 return 'Job Sheet updated successfully!';
             },
             error: 'Failed to update job sheet. Please try again.',

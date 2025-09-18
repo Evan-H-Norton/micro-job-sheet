@@ -432,7 +432,7 @@ function NewJobSheetPage() {
         toast.promise(promise, {
             loading: 'Creating job sheet...',
             success: (jobSheetId) => {
-                navigate(`/job-sheet/${jobSheetId}`, { state: { direction: 'left' } });
+                navigate(`/job-sheet/edit/${jobSheetId}`, { state: { direction: 'left' } });
                 return 'Job Sheet created successfully!';
             },
             error: 'Failed to create job sheet. Please try again.',
@@ -468,7 +468,7 @@ function NewJobSheetPage() {
                 p: 2
             }}>
                 <Button variant="outlined" onClick={handleBack} sx={{ mt: 2, mb: 2 }}>Back</Button>
-                <Button variant="contained" onClick={handleMenuClick}>{isSmallScreen ? '+' : <FlashOnIcon />}</Button>
+                <Button variant="contained" onClick={handleMenuClick}>{<FlashOnIcon/>}</Button>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -664,8 +664,28 @@ function NewJobSheetPage() {
                                             <TableRow key={index}>
                                                 <TableCell>{doc.name}</TableCell>
                                                 <TableCell>
-                                                    <Button variant="outlined" onClick={() => handleRename(doc, index, true)}>Rename</Button>
-                                                    <Button variant="outlined" onClick={() => handleDeleteLocalDocument(index)}>Delete</Button>
+                                                    {isSmallScreen ? (
+                                                        <>
+                                                            <IconButton onClick={handleDocActionMenuClick}>
+                                                                <FlashOnIcon />
+                                                            </IconButton>
+                                                            <Menu
+                                                                anchorEl={docActionAnchorEl}
+                                                                open={Boolean(docActionAnchorEl)}
+                                                                onClose={handleDocActionMenuClose}
+                                                            >
+                                                                <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
+                                                                <MenuItem onClick={() => { handleRename(doc, index, true); handleDocActionMenuClose(); }}>Rename</MenuItem>
+                                                                <MenuItem onClick={() => { handleDeleteLocalDocument(index); handleDocActionMenuClose(); }}>Delete</MenuItem>
+                                                            </Menu>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
+                                                            <Button variant="outlined" onClick={() => handleRename(doc, index, true)}>Rename</Button>
+                                                            <Button variant="outlined" onClick={() => handleDeleteLocalDocument(index)}>Delete</Button>
+                                                        </>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
