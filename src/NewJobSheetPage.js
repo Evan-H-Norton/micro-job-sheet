@@ -431,7 +431,16 @@ function NewJobSheetPage() {
 
         toast.promise(promise, {
             loading: 'Creating job sheet...',
-            success: (jobSheetId) => {
+            success: async (jobSheetId) => {
+                const jobSheetsCollection = collection(db, 'jobSheets');
+                const q = query(jobSheetsCollection, where('jobNumber', '==', jobNumber));
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.size > 1) {
+                    const updatePromises = querySnapshot.docs.map((doc) => {
+                        return updateDoc(doc.ref, { status: 'In Progress' });
+                    });
+                    await Promise.all(updatePromises);
+                }
                 navigate(`/job-sheet/edit/${jobSheetId}`, { state: { direction: 'left' } });
                 return 'Job Sheet created successfully!';
             },
