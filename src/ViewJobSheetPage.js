@@ -299,9 +299,9 @@ function ViewJobSheetPage() {
       (sheet.technicianName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     if (user && user.displayName) {
-      return searchTermMatch && sheet.technicianName === user.displayName && sheet.status === 'Open';
+      return searchTermMatch && sheet.technicianName === user.displayName && (sheet.status === 'Open' || sheet.status === 'In Progress');
     } else {
-      return searchTermMatch && sheet.status === 'Pending Invoice';
+      return searchTermMatch && (sheet.status === 'Pending Invoice' || sheet.status === 'In Progress');
     }
   });
 
@@ -357,7 +357,7 @@ function ViewJobSheetPage() {
             />
         </Box>
       <Typography variant="h5" gutterBottom sx={{ textAlign: 'center' }}>
-        {user?.displayName ? 'Open Jobs' : 'Pending Invoice Jobs'}
+        {user?.displayName ? 'Active Jobs' : 'Invoiceable Jobs'}
       </Typography>
       <TableContainer component={Paper}>
         <Table>
@@ -562,6 +562,7 @@ function ViewJobSheetPage() {
             margin="normal"
           >
             <MenuItem value="Open">Open</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
             <MenuItem value="Pending Invoice">Pending Invoice</MenuItem>
             {user && !user.displayName && <MenuItem value="Invoiced">Invoiced</MenuItem>}
           </Select>
