@@ -26,3 +26,4 @@ yarn-error.log*
 /.firebase
 
 MicroJobSheet-15.09.7z 
+"*.7z" 

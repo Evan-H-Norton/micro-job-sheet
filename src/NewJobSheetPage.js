@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
 import { Button, useMediaQuery, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Box, Menu, MenuItem, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -7,7 +7,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc, query, where, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc, query, where } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
@@ -40,7 +40,6 @@ function NewJobSheetPage() {
     const [outstanding, setOutstanding] = useState('');
     
     const [openDocumentsDialog, setOpenDocumentsDialog] = useState(false);
-    const [documents, setDocuments] = useState([]);
     const slideDirection = location.state?.direction || 'up';
     const [confirmNewCompanyDialogOpen, setConfirmNewCompanyDialogOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -96,14 +95,7 @@ function NewJobSheetPage() {
         fetchCompanies();
     }, []);
 
-    const fetchDocuments = useCallback(async () => {
-        if (jobNumber) {
-            const documentsCollection = collection(db, 'documents');
-            const q = query(documentsCollection, where('jobNumber', '==', jobNumber));
-            const documentsSnapshot = await getDocs(q);
-            setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        }
-    }, [jobNumber]);
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -155,11 +147,7 @@ function NewJobSheetPage() {
         fetchInitialData();
     }, [location.state]);
 
-    useEffect(() => {
-        if (openDocumentsDialog && jobNumber) {
-            fetchDocuments();
-        }
-    }, [openDocumentsDialog, jobNumber, fetchDocuments]);
+
 
     useEffect(() => {
         if (selectedCompany) {
@@ -325,10 +313,7 @@ function NewJobSheetPage() {
         }
     };
 
-    const handleDelete = async (docId) => {
-        await deleteDoc(doc(db, 'documents', docId));
-        fetchDocuments();
-    };
+
 
     const handleRename = (doc, index, isLocal = false) => {
         setRenameDoc({ ...doc, index, isLocal });
@@ -349,11 +334,7 @@ function NewJobSheetPage() {
                     }
                     return doc;
                 }));
-            } else {
-                const docRef = doc(db, 'documents', renameDoc.id);
-                await updateDoc(docRef, { name: newDocName });
-                fetchDocuments();
-            }
+            } 
             handleRenameClose();
         }
     };
@@ -426,16 +407,17 @@ function NewJobSheetPage() {
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
             .then((docRef) => {
+                const jobSheetId = docRef.id;
                 const countersRef = doc(db, 'counters', 'jobOrder');
                 const updateCountersPromise = updateDoc(countersRef, {
                     lastJobNumber: jobNumber,
                 });
 
                 const uploadDocumentsPromise = Promise.all(localDocuments.map(doc => {
-                    return addDoc(collection(db, 'documents'), { ...doc, jobNumber: jobNumber });
+                    return addDoc(collection(db, 'documents'), { ...doc, jobSheetId: jobSheetId, jobNumber: jobNumber });
                 }));
 
-                return Promise.all([updateCountersPromise, uploadDocumentsPromise]).then(() => docRef.id);
+                return Promise.all([updateCountersPromise, uploadDocumentsPromise]).then(() => jobSheetId);
             });
 
         toast.promise(promise, {
@@ -619,54 +601,7 @@ function NewJobSheetPage() {
                             <input type="file" hidden onChange={handleFileUpload} />
                         </Button>
                     </Box>
-                    {documents.length > 0 && (
-                        <>
-                        <Typography variant="h6" sx={{ mt: 2 }}>Uploaded Documents</Typography>
-                        <TableContainer component={Paper}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>File Name</TableCell>
-                                        <TableCell>Uploaded At</TableCell>
-                                        <TableCell>Actions</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {documents.map((doc, index) => (
-                                        <TableRow key={doc.id}>
-                                            <TableCell>{doc.name}</TableCell>
-                                            <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
-                                            <TableCell>
-                                                {isSmallScreen ? (
-                                                    <>
-                                                        <IconButton onClick={handleDocActionMenuClick}>
-                                                            <FlashOnIcon />
-                                                        </IconButton>
-                                                        <Menu
-                                                            anchorEl={docActionAnchorEl}
-                                                            open={Boolean(docActionAnchorEl)}
-                                                            onClose={handleDocActionMenuClose}
-                                                        >
-                                                            <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
-                                                            <MenuItem onClick={() => { handleRename(doc, index); handleDocActionMenuClose(); }}>Rename</MenuItem>
-                                                            <MenuItem onClick={() => { handleDelete(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
-                                                        </Menu>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
-                                                        <Button variant="outlined" onClick={() => handleRename(doc, index)}>Rename</Button>
-                                                        <Button variant="outlined" onClick={() => handleDelete(doc.id)}>Delete</Button>
-                                                    </>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        </>
-                    )}
+
                     {localDocuments.length > 0 && (
                         <>
                             <Typography variant="h6" sx={{ mt: 2 }}>Local Documents</Typography>

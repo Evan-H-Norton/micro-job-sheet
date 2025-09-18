@@ -8,6 +8,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowBack, ArrowForward, FlashOn as FlashOnIcon } from '@mui/icons-material';
 
 import JobSheetForm from './JobSheetForm';
+import PartsListDialog from './PartsListDialog';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 
@@ -24,7 +25,11 @@ function JobSheetDetailsPage() {
   const [newDocName, setNewDocName] = useState('');
   const [viewDoc, setViewDoc] = useState(null);
   const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
+  const [openPartsListDialog, setOpenPartsListDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [showAllDocuments, setShowAllDocuments] = useState(false);
+
+  const toggleShowAllDocuments = () => setShowAllDocuments(!showAllDocuments);
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -36,6 +41,11 @@ function JobSheetDetailsPage() {
 
   const handleViewDocuments = () => {
     setOpenDocumentsDialog(true);
+    handleMenuClose();
+  };
+
+  const handleViewPartsList = () => {
+    setOpenPartsListDialog(true);
     handleMenuClose();
   };
   
@@ -62,15 +72,19 @@ function JobSheetDetailsPage() {
         const newIndex = relatedJobSheets.findIndex(sheet => sheet.id === id);
         setCurrentSheetIndex(newIndex);
 
-        // Fetch documents related to this job number
         const documentsCollection = collection(db, 'documents');
-        const q = query(documentsCollection, where('jobNumber', '==', data.jobNumber));
+        let q;
+        if (showAllDocuments) {
+          q = query(documentsCollection, where('jobNumber', '==', data.jobNumber));
+        } else {
+          q = query(documentsCollection, where('jobSheetId', '==', id));
+        }
         const documentsSnapshot = await getDocs(q);
         setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       }
     };
     fetchJobSheetAndDocuments();
-  }, [id]);
+  }, [id, showAllDocuments]);
 
   
 
@@ -91,7 +105,7 @@ function JobSheetDetailsPage() {
   const handleRenameSave = async () => {
     await updateDoc(doc(db, 'documents', renameDoc.id), { name: newDocName });
     const documentsCollection = collection(db, 'documents');
-    const q = query(documentsCollection, where('jobNumber', '==', jobSheet.jobNumber));
+    const q = query(documentsCollection, where('jobSheetId', '==', id));
     const documentsSnapshot = await getDocs(q);
     setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     handleRenameClose();
@@ -161,6 +175,7 @@ function JobSheetDetailsPage() {
                 onClose={handleMenuClose}
               >
                 <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
+                <MenuItem onClick={handleViewPartsList}>Parts List</MenuItem>
               </Menu>
             </>
           )}
@@ -198,7 +213,7 @@ function JobSheetDetailsPage() {
 
       <Dialog open={openDocumentsDialog} onClose={() => setOpenDocumentsDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          Documents for Job # {jobSheet.jobNumber}
+          Documents for Job # {jobSheet.jobNumber}, <span onClick={toggleShowAllDocuments} style={{cursor: 'pointer', textDecoration: showAllDocuments ? 'line-through' : 'none'}}>Sheet {currentSheetIndex + 1}</span>
           <IconButton
             aria-label="close"
             onClick={() => setOpenDocumentsDialog(false)}
@@ -213,49 +228,114 @@ function JobSheetDetailsPage() {
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>File Name</TableCell>
-                  <TableCell>Uploaded At</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell>{doc.name}</TableCell>
-                    <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
-                    <TableCell>
-                        {isSmallScreen ? (
-                            <>
-                                <IconButton onClick={handleDocActionMenuClick}>
-                                    <FlashOnIcon />
-                                </IconButton>
-                                <Menu
-                                    anchorEl={docActionAnchorEl}
-                                    open={Boolean(docActionAnchorEl)}
-                                    onClose={handleDocActionMenuClose}
-                                >
-                                    <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
-                                    <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
-                                    
-                                </Menu>
-                            </>
-                        ) : (
-                            <>
-                                <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
-                                <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
-                            </>
-                        )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {
+            showAllDocuments ? (
+              Object.entries(documents.reduce((acc, doc) => {
+                const sheetId = doc.jobSheetId || 'unsorted';
+                if (!acc[sheetId]) {
+                  acc[sheetId] = [];
+                }
+                acc[sheetId].push(doc);
+                return acc;
+              }, {})).sort(([sheetIdA], [sheetIdB]) => {
+                const sheetIndexA = jobSheets.findIndex(sheet => sheet.id === sheetIdA);
+                const sheetIndexB = jobSheets.findIndex(sheet => sheet.id === sheetIdB);
+                return sheetIndexA - sheetIndexB;
+              }).map(([sheetId, sheetDocuments]) => {
+                const sheetIndex = jobSheets.findIndex(sheet => sheet.id === sheetId);
+                return (
+                  <Box key={sheetId} mb={4}>
+                    <Typography variant="h6" gutterBottom>Sheet {sheetIndex + 1}</Typography>
+                    <TableContainer component={Paper}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>File Name</TableCell>
+                            <TableCell>Uploaded At</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sheetDocuments.map((doc) => (
+                            <TableRow key={doc.id}>
+                              <TableCell>{doc.name}</TableCell>
+                              <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
+                              <TableCell>
+                                  {isSmallScreen ? (
+                                      <>
+                                          <IconButton onClick={handleDocActionMenuClick}>
+                                              <FlashOnIcon />
+                                          </IconButton>
+                                          <Menu
+                                              anchorEl={docActionAnchorEl}
+                                              open={Boolean(docActionAnchorEl)}
+                                              onClose={handleDocActionMenuClose}
+                                          >
+                                              <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
+                                              <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
+                                              
+                                          </Menu>
+                                      </>
+                                  ) : (
+                                      <>
+                                          <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
+                                          <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
+                                      </>
+                                  )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                )
+              })
+            ) : (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>File Name</TableCell>
+                      <TableCell>Uploaded At</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {documents.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{doc.name}</TableCell>
+                        <TableCell>{new Date(doc.uploadedAt.toDate()).toLocaleString()}</TableCell>
+                        <TableCell>
+                            {isSmallScreen ? (
+                                <>
+                                    <IconButton onClick={handleDocActionMenuClick}>
+                                        <FlashOnIcon />
+                                    </IconButton>
+                                    <Menu
+                                        anchorEl={docActionAnchorEl}
+                                        open={Boolean(docActionAnchorEl)}
+                                        onClose={handleDocActionMenuClose}
+                                    >
+                                        <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
+                                        <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
+                                        
+                                    </Menu>
+                                </> 
+                            ) : (
+                                <>
+                                    <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
+                                    <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
+                                </>
+                            )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )
+          }
         </DialogContent>
       </Dialog>
 
@@ -291,6 +371,14 @@ function JobSheetDetailsPage() {
           <Button onClick={handleViewClose}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <PartsListDialog
+        open={openPartsListDialog}
+        onClose={() => setOpenPartsListDialog(false)}
+        parts={jobSheet.parts || []}
+        setParts={() => {}}
+        viewMode={true}
+      />
     </Box>
   );
 }

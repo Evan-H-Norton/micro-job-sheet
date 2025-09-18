@@ -7,7 +7,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const PartsListDialog = ({ open, onClose, parts, setParts }) => {
+const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) => {
     const [newPart, setNewPart] = useState({ quantity: 1, description: '', price: '' });
 
     const handleAddPart = () => {
@@ -50,7 +50,7 @@ const PartsListDialog = ({ open, onClose, parts, setParts }) => {
                                 <TableCell sx={{ width: '15%' }}>Quantity</TableCell>
                                 <TableCell sx={{ width: '60%' }}>Part Description</TableCell>
                                 <TableCell sx={{ width: '15%' }}>Price excl.</TableCell>
-                                <TableCell sx={{ width: '10%' }}>Action</TableCell>
+                                {!viewMode && <TableCell sx={{ width: '10%' }}>Action</TableCell>}
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -61,7 +61,7 @@ const PartsListDialog = ({ open, onClose, parts, setParts }) => {
                                             type="number"
                                             value={part.quantity}
                                             onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
-                                            inputProps={{ min: 1 }}
+                                            inputProps={{ min: 1, readOnly: viewMode }}
                                         />
                                     </TableCell>
                                     <TableCell sx={{ width: '60%' }}>
@@ -69,19 +69,23 @@ const PartsListDialog = ({ open, onClose, parts, setParts }) => {
                                             value={part.description}
                                             onChange={(e) => handlePartChange(index, 'description', e.target.value)}
                                             fullWidth
+                                            InputProps={{ readOnly: viewMode }}
                                         />
                                     </TableCell>
                                     <TableCell sx={{ width: '15%' }}>
                                         <TextField
                                             value={part.price}
                                             onChange={(e) => handlePartChange(index, 'price', e.target.value)}
+                                            InputProps={{ readOnly: viewMode }}
                                         />
                                     </TableCell>
-                                    <TableCell sx={{ width: '10%' }}>
-                                        <IconButton onClick={() => handleRemovePart(index)}>
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </TableCell>
+                                    {!viewMode && (
+                                        <TableCell sx={{ width: '10%' }}>
+                                            <IconButton onClick={() => handleRemovePart(index)}>
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -92,11 +96,13 @@ const PartsListDialog = ({ open, onClose, parts, setParts }) => {
                         Total: {formatCurrency(calculateTotal())}
                     </Typography>
                 </Box>
-                <Box sx={{ mt: 2 }}>
-                    <Button onClick={handleAddPart} startIcon={<AddIcon />} variant="contained">
-                        Add Part
-                    </Button>
-                </Box>
+                {!viewMode && (
+                    <Box sx={{ mt: 2 }}>
+                        <Button onClick={handleAddPart} startIcon={<AddIcon />} variant="contained">
+                            Add Part
+                        </Button>
+                    </Box>
+                )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} variant="outlined">Close</Button>
