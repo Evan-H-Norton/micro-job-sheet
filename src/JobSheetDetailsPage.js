@@ -8,7 +8,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowBack, ArrowForward, FlashOn as FlashOnIcon } from '@mui/icons-material';
 
 import JobSheetForm from './JobSheetForm';
-import PartsListDialog from './PartsListDialog';
+import PartsPage from './PartsPage';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 
@@ -25,7 +25,7 @@ function JobSheetDetailsPage() {
   const [newDocName, setNewDocName] = useState('');
   const [viewDoc, setViewDoc] = useState(null);
   const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
-  const [openPartsListDialog, setOpenPartsListDialog] = useState(false);
+  const [openPartsPage, setOpenPartsPage] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
 
@@ -44,8 +44,8 @@ function JobSheetDetailsPage() {
     handleMenuClose();
   };
 
-  const handleViewPartsList = () => {
-    setOpenPartsListDialog(true);
+  const handleOpenPartsPage = () => {
+    setOpenPartsPage(true);
     handleMenuClose();
   };
   
@@ -175,7 +175,7 @@ function JobSheetDetailsPage() {
                 onClose={handleMenuClose}
               >
                 <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
-                <MenuItem onClick={handleViewPartsList}>Parts List</MenuItem>
+                <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
               </Menu>
             </>
           )}
@@ -372,12 +372,14 @@ function JobSheetDetailsPage() {
         </DialogActions>
       </Dialog>
 
-      <PartsListDialog
-        open={openPartsListDialog}
-        onClose={() => setOpenPartsListDialog(false)}
-        parts={jobSheet.parts || []}
-        setParts={() => {}}
+      <PartsPage
+        open={openPartsPage}
+        onClose={() => setOpenPartsPage(false)}
+        jobSheetId={id}
+        jobNumber={jobSheet.jobNumber}
+        currentSheetIndex={currentSheetIndex}
         viewMode={true}
+        jobSheets={jobSheets}
       />
     </Box>
   );

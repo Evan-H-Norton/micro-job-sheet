@@ -12,7 +12,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
 import JobSheetForm from './JobSheetForm';
-import PartsListDialog from './PartsListDialog';
+import PartsPage from './PartsPage';
 
 function NewJobSheetPage() {
     const location = useLocation();
@@ -49,8 +49,8 @@ function NewJobSheetPage() {
     const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
     const [localDocuments, setLocalDocuments] = useState([]);
     const [showBackButtonDialog, setShowBackButtonDialog] = useState(false);
+    const [openPartsPage, setOpenPartsPage] = useState(false);
     const [parts, setParts] = useState([]);
-    const [openPartsDialog, setOpenPartsDialog] = useState(false);
 
     const taskNames = [
         'Client Logbook Check',
@@ -225,8 +225,8 @@ function NewJobSheetPage() {
         handleMenuClose();
     };
 
-    const handleOpenPartsDialog = () => {
-        setOpenPartsDialog(true);
+    const handleOpenPartsPage = () => {
+        setOpenPartsPage(true);
         handleMenuClose();
     };
 
@@ -402,7 +402,6 @@ function NewJobSheetPage() {
             status: 'Open', createdAt: new Date(),
             tasks,
             outstanding,
-            parts,
         };
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
@@ -417,7 +416,11 @@ function NewJobSheetPage() {
                     return addDoc(collection(db, 'documents'), { ...doc, jobSheetId: jobSheetId, jobNumber: jobNumber });
                 }));
 
-                return Promise.all([updateCountersPromise, uploadDocumentsPromise]).then(() => jobSheetId);
+                const uploadPartsPromise = Promise.all(parts.map(part => {
+                    return addDoc(collection(db, 'parts'), { ...part, jobSheetId: jobSheetId, jobNumber: jobNumber });
+                }));
+
+                return Promise.all([updateCountersPromise, uploadDocumentsPromise, uploadPartsPromise]).then(() => jobSheetId);
             });
 
         toast.promise(promise, {
@@ -475,7 +478,7 @@ function NewJobSheetPage() {
                     onClose={handleMenuClose}
                 >
                     <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
-                    <MenuItem onClick={handleOpenPartsDialog}>Parts List</MenuItem>
+                    <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
                 </Menu>
             </Box>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
@@ -679,7 +682,7 @@ function NewJobSheetPage() {
                     <Button onClick={handleViewClose}>Close</Button>
                 </DialogActions>
             </Dialog>
-            <PartsListDialog open={openPartsDialog} onClose={() => setOpenPartsDialog(false)} parts={parts} setParts={setParts} />
+            <PartsPage open={openPartsPage} onClose={() => setOpenPartsPage(false)} jobSheetId={null} jobNumber={jobNumber} currentSheetIndex={0} jobSheets={[]} parts={parts} setParts={setParts} />
         </Box>
     );
 }
