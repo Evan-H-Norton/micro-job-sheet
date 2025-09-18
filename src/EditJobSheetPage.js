@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { ArrowBack, ArrowForward, FlashOn, CameraAlt as CameraAltIcon, UploadFile as UploadFileIcon, FlashOn as FlashOnIcon } from '@mui/icons-material';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import JobSheetForm from './JobSheetForm';
+import PartsListDialog from './PartsListDialog';
 
 function EditJobSheetPage() {
     const orderTypeInputRef = useRef(null);
@@ -51,6 +52,8 @@ function EditJobSheetPage() {
     const [newDocName, setNewDocName] = useState('');
     const [viewDoc, setViewDoc] = useState(null);
     const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
+    const [parts, setParts] = useState([]);
+    const [openPartsDialog, setOpenPartsDialog] = useState(false);
     
     
     const { user } = useContext(AuthContext);
@@ -108,6 +111,7 @@ function EditJobSheetPage() {
                 setStatus(data.status || 'Open');
                 setInvoiceNumber(data.invoiceNumber || '');
                 setInitialInvoiceNumber(data.invoiceNumber || '');
+                setParts(data.parts || []);
 
                 const jobSheetsCollection = collection(db, 'jobSheets');
                 const jobSheetsSnapshot = await getDocs(jobSheetsCollection);
@@ -245,6 +249,11 @@ function EditJobSheetPage() {
         handleMenuClose();
     };
 
+    const handleOpenPartsDialog = () => {
+        setOpenPartsDialog(true);
+        handleMenuClose();
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         const jobSheetRef = doc(db, 'jobSheets', id);
@@ -272,6 +281,7 @@ function EditJobSheetPage() {
             tasks,
             outstanding,
             invoiceNumber,
+            parts,
         };
 
         const updatePromises = [updateDoc(jobSheetRef, jobSheetData)];
@@ -447,6 +457,7 @@ function EditJobSheetPage() {
                 >
                     <MenuItem onClick={handleAddSheet}>Add Sheet</MenuItem>
                     <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
+                    <MenuItem onClick={handleOpenPartsDialog}>Parts List</MenuItem>
                 </Menu>
             </Box>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
@@ -618,6 +629,7 @@ function EditJobSheetPage() {
                     <Button onClick={handleViewClose}>Close</Button>
                 </DialogActions>
             </Dialog>
+            <PartsListDialog open={openPartsDialog} onClose={() => setOpenPartsDialog(false)} parts={parts} setParts={setParts} />
         </Box>
     );
 }

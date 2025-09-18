@@ -12,6 +12,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
 import JobSheetForm from './JobSheetForm';
+import PartsListDialog from './PartsListDialog';
 
 function NewJobSheetPage() {
     const location = useLocation();
@@ -49,6 +50,8 @@ function NewJobSheetPage() {
     const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
     const [localDocuments, setLocalDocuments] = useState([]);
     const [showBackButtonDialog, setShowBackButtonDialog] = useState(false);
+    const [parts, setParts] = useState([]);
+    const [openPartsDialog, setOpenPartsDialog] = useState(false);
 
     const taskNames = [
         'Client Logbook Check',
@@ -234,6 +237,11 @@ function NewJobSheetPage() {
         handleMenuClose();
     };
 
+    const handleOpenPartsDialog = () => {
+        setOpenPartsDialog(true);
+        handleMenuClose();
+    };
+
     const navigate = useNavigate();
 
     const handleBack = () => {
@@ -413,6 +421,7 @@ function NewJobSheetPage() {
             status: 'Open', createdAt: new Date(),
             tasks,
             outstanding,
+            parts,
         };
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
@@ -484,6 +493,7 @@ function NewJobSheetPage() {
                     onClose={handleMenuClose}
                 >
                     <MenuItem onClick={handleViewDocuments}>Documents</MenuItem>
+                    <MenuItem onClick={handleOpenPartsDialog}>Parts List</MenuItem>
                 </Menu>
             </Box>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
@@ -734,6 +744,7 @@ function NewJobSheetPage() {
                     <Button onClick={handleViewClose}>Close</Button>
                 </DialogActions>
             </Dialog>
+            <PartsListDialog open={openPartsDialog} onClose={() => setOpenPartsDialog(false)} parts={parts} setParts={setParts} />
         </Box>
     );
 }
