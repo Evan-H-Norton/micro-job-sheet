@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Button, Box, useMediaQuery, Slide, Paper, Menu, MenuItem, Dialog, DialogTitle, DialogContent, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, DialogActions, Typography } from '@mui/material';
+import { Button, Box, useMediaQuery, Slide, Paper, Menu, MenuItem, Dialog, DialogTitle, DialogContent, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, DialogActions, Typography, DialogContentText } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
@@ -12,6 +12,7 @@ import { ArrowBack, ArrowForward, FlashOn, CameraAlt as CameraAltIcon, UploadFil
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import JobSheetForm from './JobSheetForm';
 import PartsPage from './PartsPage';
+import PDFViewer from './PDFViewer';
 
 function EditJobSheetPage() {
     const orderTypeInputRef = useRef(null);
@@ -51,9 +52,10 @@ function EditJobSheetPage() {
     const [renameDoc, setRenameDoc] = useState(null);
     const [newDocName, setNewDocName] = useState('');
     const [viewDoc, setViewDoc] = useState(null);
-    const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
+    const [docActionMenu, setDocActionMenu] = useState({ anchorEl: null, docId: null });
     const [openPartsPage, setOpenPartsPage] = useState(false);
     const [showAllDocuments, setShowAllDocuments] = useState(false);
+    const [documentToDelete, setDocumentToDelete] = useState(null);
 
     const toggleShowAllDocuments = () => setShowAllDocuments(!showAllDocuments);
     
@@ -148,14 +150,18 @@ function EditJobSheetPage() {
                 const documentsCollection = collection(db, 'documents');
                 const q = query(documentsCollection, where('jobNumber', '==', jobNumber));
                 const documentsSnapshot = await getDocs(q);
-                setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const docs = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => a.uploadedAt.toDate() - b.uploadedAt.toDate());
+                setDocuments(docs);
             }
         } else {
             if (id) {
                 const documentsCollection = collection(db, 'documents');
                 const q = query(documentsCollection, where('jobSheetId', '==', id));
                 const documentsSnapshot = await getDocs(q);
-                setDocuments(documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const docs = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => a.uploadedAt.toDate() - b.uploadedAt.toDate());
+                setDocuments(docs);
             }
         }
     }, [id, jobNumber, showAllDocuments]);
@@ -325,84 +331,151 @@ function EditJobSheetPage() {
         }
     };
 
-    const handleFileUpload = async (event) => {
+    const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        const options = {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-        };
-
-        try {
-            const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.readAsDataURL(compressedFile);
-            reader.onload = async () => {
-                const base64 = reader.result;
-                await addDoc(collection(db, 'documents'), {
-                    jobSheetId: id,
-                    name: file.name,
-                    fileType: file.type,
-                    base64: base64,
-                    uploadedAt: new Date(),
-                    jobNumber: jobNumber,
-                });
-                fetchDocuments();
-            };
-            reader.onerror = (error) => {
-                console.error("Error reading file: ", error);
-                toast.error("Error reading file.");
-            };
-        } catch (error) {
-            console.error('Error compressing image:', error);
-            toast.error('Error compressing image.');
-        }
-    };
-
-    const handleCameraUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const options = {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-        };
-
-        try {
-            const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.readAsDataURL(compressedFile);
-            reader.onload = async () => {
-                const base64 = reader.result;
-                await addDoc(collection(db, 'documents'), {
-                    jobSheetId: id,
-                    name: `camera_${Date.now()}_${file.name}`,
-                    fileType: file.type,
-                    base64: base64,
-                    uploadedAt: new Date(),
-                    jobNumber: jobNumber,
-                });
-                fetchDocuments();
-                if (cameraInputRef.current) {
-                    cameraInputRef.current.value = '';
+        if (file.type.startsWith('image/')) {
+            const promise = new Promise(async (resolve, reject) => {
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                };
+                try {
+                    const compressedFile = await imageCompression(file, options);
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedFile);
+                    reader.onload = async () => {
+                        try {
+                            const base64 = reader.result;
+                            await addDoc(collection(db, 'documents'), {
+                                jobSheetId: id,
+                                name: file.name,
+                                fileType: file.type,
+                                base64: base64,
+                                uploadedAt: new Date(),
+                                jobNumber: jobNumber,
+                            });
+                            fetchDocuments();
+                            resolve();
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = (error) => reject(error);
+                } catch (error) {
+                    reject(error);
                 }
-            };
-            reader.onerror = (error) => {
-                console.error("Error reading file: ", error);
-                toast.error("Error reading file.");
-            };
-        } catch (error) {
-            console.error('Error compressing image:', error);
-            toast.error('Error compressing image.');
+            });
+
+            toast.promise(promise, {
+                loading: 'Compressing and uploading image...',
+                success: 'Image uploaded successfully!',
+                error: 'Error uploading image.',
+            });
+
+        } else if (file.type === 'application/pdf') {
+            const promise = new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsArrayBuffer(file);
+                reader.onload = async () => {
+                    try {
+                        const arrayBuffer = reader.result;
+                        const chunkSize = 768 * 1024; // 768KB
+                        const chunks = [];
+                        for (let i = 0; i < arrayBuffer.byteLength; i += chunkSize) {
+                            const chunk = arrayBuffer.slice(i, i + chunkSize);
+                            const base64Chunk = btoa(
+                                new Uint8Array(chunk)
+                                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                            );
+                            chunks.push(base64Chunk);
+                        }
+                        await addDoc(collection(db, 'documents'), {
+                            jobSheetId: id,
+                            name: file.name,
+                            fileType: file.type,
+                            base64Chunks: chunks,
+                            uploadedAt: new Date(),
+                            jobNumber: jobNumber,
+                        });
+                        fetchDocuments();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+            });
+
+            toast.promise(promise, {
+                loading: 'Processing and uploading PDF...',
+                success: 'PDF uploaded successfully!',
+                error: 'Error uploading PDF.',
+            });
+        } else {
+            toast.error("Unsupported file type.");
         }
     };
 
-    const handleDelete = async (docId) => {
-        await deleteDoc(doc(db, 'documents', docId));
-        fetchDocuments();
+    const handleCameraUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const promise = new Promise(async (resolve, reject) => {
+            const options = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+            };
+            try {
+                const compressedFile = await imageCompression(file, options);
+                const reader = new FileReader();
+                reader.readAsDataURL(compressedFile);
+                reader.onload = async () => {
+                    try {
+                        const base64 = reader.result;
+                        await addDoc(collection(db, 'documents'), {
+                            jobSheetId: id,
+                            name: `Photo-${documents.length + 1}.${file.name.split('.').pop()}`,
+                            fileType: file.type,
+                            base64: base64,
+                            uploadedAt: new Date(),
+                            jobNumber: jobNumber,
+                        });
+                        fetchDocuments();
+                        if (cameraInputRef.current) {
+                            cameraInputRef.current.value = '';
+                        }
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        toast.promise(promise, {
+            loading: 'Compressing and uploading photo...',
+            success: 'Photo uploaded successfully!',
+            error: 'Error uploading photo.',
+        });
+    };
+
+    const handleDeleteDocumentClick = (docId) => {
+        setDocumentToDelete(docId);
+    };
+
+    const handleDeleteDocument = async () => {
+        if (documentToDelete) {
+            await deleteDoc(doc(db, 'documents', documentToDelete));
+            fetchDocuments();
+            setDocumentToDelete(null);
+        }
     };
 
     const handleRename = (doc) => {
@@ -422,19 +495,24 @@ function EditJobSheetPage() {
     };
 
     const handleView = (doc) => {
-        setViewDoc(doc);
+        if (doc.base64Chunks) { // This is a PDF
+            const reconstructedBase64 = `data:${doc.fileType};base64,${doc.base64Chunks.join('')}`;
+            setViewDoc({ ...doc, base64: reconstructedBase64 });
+        } else { // This is an image
+            setViewDoc(doc);
+        }
     };
 
     const handleViewClose = () => {
         setViewDoc(null);
     };
 
-    const handleDocActionMenuClick = (event) => {
-        setDocActionAnchorEl(event.currentTarget);
+    const handleDocActionMenuClick = (event, docId) => {
+        setDocActionMenu({ anchorEl: event.currentTarget, docId: docId });
     };
 
     const handleDocActionMenuClose = () => {
-        setDocActionAnchorEl(null);
+        setDocActionMenu({ anchorEl: null, docId: null });
     };
 
     return (
@@ -560,7 +638,7 @@ function EditJobSheetPage() {
                         </Button>
                         <Button variant="contained" component="label">
                             <UploadFileIcon />
-                            <input type="file" hidden onChange={handleFileUpload} />
+                            <input type="file" accept="image/*,application/pdf" hidden onChange={handleFileUpload} />
                         </Button>
                     </Box>
                     {
@@ -598,24 +676,24 @@ function EditJobSheetPage() {
                                                         <TableCell>
                                                             {isSmallScreen ? (
                                                                 <>
-                                                                    <IconButton onClick={handleDocActionMenuClick}>
+                                                                    <IconButton onClick={(e) => handleDocActionMenuClick(e, doc.id)}>
                                                                         <FlashOnIcon />
                                                                     </IconButton>
                                                                     <Menu
-                                                                        anchorEl={docActionAnchorEl}
-                                                                        open={Boolean(docActionAnchorEl)}
+                                                                        anchorEl={docActionMenu.anchorEl}
+                                                                        open={docActionMenu.docId === doc.id}
                                                                         onClose={handleDocActionMenuClose}
                                                                     >
                                                                         <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
                                                                         <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
-                                                                        <MenuItem onClick={() => { handleDelete(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
+<MenuItem onClick={() => { handleDeleteDocumentClick(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
                                                                     </Menu>
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
                                                                     <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
-                                                                    <Button variant="outlined" onClick={() => handleDelete(doc.id)}>Delete</Button>
+                                                                    <Button variant="outlined" onClick={() => handleDeleteDocumentClick(doc.id)}>Delete</Button>
                                                                 </>
                                                             )}
                                                         </TableCell>
@@ -645,24 +723,24 @@ function EditJobSheetPage() {
                                                 <TableCell>
                                                     {isSmallScreen ? (
                                                         <>
-                                                            <IconButton onClick={handleDocActionMenuClick}>
+                                                            <IconButton onClick={(e) => handleDocActionMenuClick(e, doc.id)}>
                                                                 <FlashOnIcon />
                                                             </IconButton>
                                                             <Menu
-                                                                anchorEl={docActionAnchorEl}
-                                                                open={Boolean(docActionAnchorEl)}
+                                                                anchorEl={docActionMenu.anchorEl}
+                                                                open={docActionMenu.docId === doc.id}
                                                                 onClose={handleDocActionMenuClose}
                                                             >
                                                                 <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
                                                                 <MenuItem onClick={() => { handleRename(doc); handleDocActionMenuClose(); }}>Rename</MenuItem>
-                                                                <MenuItem onClick={() => { handleDelete(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
+                                                                <MenuItem onClick={() => { handleDeleteDocumentClick(doc.id); handleDocActionMenuClose(); }}>Delete</MenuItem>
                                                             </Menu>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
                                                             <Button variant="outlined" onClick={() => handleRename(doc)}>Rename</Button>
-                                                            <Button variant="outlined" onClick={() => handleDelete(doc.id)}>Delete</Button>
+                                                            <Button variant="outlined" onClick={() => handleDeleteDocumentClick(doc.id)}>Delete</Button>
                                                         </>
                                                     )}
                                                 </TableCell>
@@ -687,6 +765,7 @@ function EditJobSheetPage() {
                         fullWidth
                         value={newDocName}
                         onChange={(e) => setNewDocName(e.target.value)}
+                        onFocus={(event) => event.target.select()}
                     />
                 </DialogContent>
                 <DialogActions>
@@ -695,17 +774,37 @@ function EditJobSheetPage() {
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={!!viewDoc} onClose={handleViewClose}>
-                <DialogTitle>{viewDoc?.name}</DialogTitle>
+            <Dialog open={!!viewDoc} onClose={handleViewClose} fullWidth maxWidth="lg">
+                {viewDoc && (
+                    <>
+                        <DialogTitle>{viewDoc.name}</DialogTitle>
+                        <DialogContent>
+                            {viewDoc.fileType.startsWith('image/') ? (
+                                <TransformWrapper initialScale={1}>
+                                    <TransformComponent>
+                                        <img src={viewDoc.base64} alt={viewDoc.name} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 250px)' }} />
+                                    </TransformComponent>
+                                </TransformWrapper>
+                            ) : (
+                                <PDFViewer file={viewDoc.base64} />
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleViewClose}>Close</Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            <Dialog open={!!documentToDelete} onClose={() => setDocumentToDelete(null)}>
+                <DialogTitle>Delete Document</DialogTitle>
                 <DialogContent>
-                    <TransformWrapper>
-                        <TransformComponent>
-                            <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
-                        </TransformComponent>
-                    </TransformWrapper>
+                    <DialogContentText>
+                        Are you sure you want to delete this document? This action cannot be undone.
+                    </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleViewClose}>Close</Button>
+                    <Button onClick={() => setDocumentToDelete(null)}>Cancel</Button>
+                    <Button onClick={handleDeleteDocument} color="error">Delete</Button>
                 </DialogActions>
             </Dialog>
             <PartsPage open={openPartsPage} onClose={() => setOpenPartsPage(false)} jobSheetId={id} jobNumber={jobNumber} currentSheetIndex={currentSheetIndex} jobSheets={jobSheets} />

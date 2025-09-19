@@ -13,6 +13,8 @@ import { AuthContext } from './App';
 import toast from 'react-hot-toast';
 import JobSheetForm from './JobSheetForm';
 import PartsPage from './PartsPage';
+import PDFViewer from './PDFViewer';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 function NewJobSheetPage() {
     const location = useLocation();
@@ -46,11 +48,12 @@ function NewJobSheetPage() {
     const [renameDoc, setRenameDoc] = useState(null);
     const [newDocName, setNewDocName] = useState('');
     const [viewDoc, setViewDoc] = useState(null);
-    const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
+    const [docActionMenu, setDocActionMenu] = useState({ anchorEl: null, docId: null });
     const [localDocuments, setLocalDocuments] = useState([]);
     const [showBackButtonDialog, setShowBackButtonDialog] = useState(false);
     const [openPartsPage, setOpenPartsPage] = useState(false);
     const [parts, setParts] = useState([]);
+    const [localDocumentToDelete, setLocalDocumentToDelete] = useState(null);
 
     const taskNames = [
         'Client Logbook Check',
@@ -233,84 +236,140 @@ function NewJobSheetPage() {
     const navigate = useNavigate();
 
     const handleBack = () => {
-        if (localDocuments.length > 0) {
+        if (localDocuments.length > 0 || parts.length > 0) {
             setShowBackButtonDialog(true);
         } else {
             navigate('/');
         }
     };
 
-    const handleDeleteLocalDocument = (index) => {
-        setLocalDocuments(prevDocs => prevDocs.filter((_, i) => i !== index));
+    const handleDeleteLocalDocumentClick = (index) => {
+        setLocalDocumentToDelete(index);
     };
 
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const options = {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-        };
-
-        try {
-            const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.readAsDataURL(compressedFile);
-            reader.onload = () => {
-                const base64 = reader.result;
-                setLocalDocuments(prevDocs => [...prevDocs, {
-                    name: file.name,
-                    fileType: file.type,
-                    base64: base64,
-                    uploadedAt: new Date(),
-                }]);
-            };
-            reader.onerror = (error) => {
-                console.error("Error reading file: ", error);
-                toast.error("Error reading file.");
-            };
-        } catch (error) {
-            console.error('Error compressing image:', error);
-            toast.error('Error compressing image.');
+    const handleDeleteLocalDocument = () => {
+        if (localDocumentToDelete !== null) {
+            setLocalDocuments(prevDocs => prevDocs.filter((_, i) => i !== localDocumentToDelete));
+            setLocalDocumentToDelete(null);
         }
     };
 
-    const handleCameraUpload = async (event) => {
+    const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        const options = {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-        };
-
-        try {
-            const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.readAsDataURL(compressedFile);
-            reader.onload = () => {
-                const base64 = reader.result;
-                setLocalDocuments(prevDocs => [...prevDocs, {
-                    name: `camera_${Date.now()}_${file.name}`,
-                    fileType: file.type,
-                    base64: base64,
-                    uploadedAt: new Date(),
-                }]);
-                if (cameraInputRef.current) {
-                    cameraInputRef.current.value = '';
+        if (file.type.startsWith('image/')) {
+            const promise = new Promise(async (resolve, reject) => {
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                };
+                try {
+                    const compressedFile = await imageCompression(file, options);
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedFile);
+                    reader.onload = () => {
+                        const base64 = reader.result;
+                        setLocalDocuments(prevDocs => [...prevDocs, {
+                            name: file.name,
+                            fileType: file.type,
+                            base64: base64,
+                            uploadedAt: new Date(),
+                        }]);
+                        resolve();
+                    };
+                    reader.onerror = (error) => reject(error);
+                } catch (error) {
+                    reject(error);
                 }
-            };
-            reader.onerror = (error) => {
-                console.error("Error reading file: ", error);
-                toast.error("Error reading file.");
-            };
-        } catch (error) {
-            console.error('Error compressing image:', error);
-            toast.error('Error compressing image.');
+            });
+
+            toast.promise(promise, {
+                loading: 'Compressing image...',
+                success: 'Image uploaded successfully!',
+                error: 'Error compressing image.',
+            });
+
+        } else if (file.type === 'application/pdf') {
+            const promise = new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsArrayBuffer(file);
+                reader.onload = () => {
+                    try {
+                        const arrayBuffer = reader.result;
+                        const chunkSize = 768 * 1024; // 768KB
+                        const chunks = [];
+                        for (let i = 0; i < arrayBuffer.byteLength; i += chunkSize) {
+                            const chunk = arrayBuffer.slice(i, i + chunkSize);
+                            const base64Chunk = btoa(
+                                new Uint8Array(chunk)
+                                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                            );
+                            chunks.push(base64Chunk);
+                        }
+                        setLocalDocuments(prevDocs => [...prevDocs, {
+                            name: file.name,
+                            fileType: file.type,
+                            base64Chunks: chunks,
+                            uploadedAt: new Date(),
+                        }]);
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+            });
+
+            toast.promise(promise, {
+                loading: 'Processing PDF...',
+                success: 'PDF uploaded successfully!',
+                error: 'Error processing PDF.',
+            });
+        } else {
+            toast.error("Unsupported file type.");
         }
+    };
+
+    const handleCameraUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const promise = new Promise(async (resolve, reject) => {
+            const options = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+            };
+            try {
+                const compressedFile = await imageCompression(file, options);
+                const reader = new FileReader();
+                reader.readAsDataURL(compressedFile);
+                reader.onload = () => {
+                    const base64 = reader.result;
+                    setLocalDocuments(prevDocs => [...prevDocs, {
+                        name: `Photo-${localDocuments.length + 1}.${file.name.split('.').pop()}`,
+                        fileType: file.type,
+                        base64: base64,
+                        uploadedAt: new Date(),
+                    }]);
+                    if (cameraInputRef.current) {
+                        cameraInputRef.current.value = '';
+                    }
+                    resolve();
+                };
+                reader.onerror = (error) => reject(error);
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        toast.promise(promise, {
+            loading: 'Compressing photo...',
+            success: 'Photo uploaded successfully!',
+            error: 'Error compressing photo.',
+        });
     };
 
 
@@ -340,19 +399,24 @@ function NewJobSheetPage() {
     };
 
     const handleView = (doc) => {
-        setViewDoc(doc);
+        if (doc.base64Chunks) { // This is a PDF
+            const reconstructedBase64 = `data:${doc.fileType};base64,${doc.base64Chunks.join('')}`;
+            setViewDoc({ ...doc, base64: reconstructedBase64 });
+        } else { // This is an image
+            setViewDoc(doc);
+        }
     };
 
     const handleViewClose = () => {
         setViewDoc(null);
     };
 
-    const handleDocActionMenuClick = (event) => {
-        setDocActionAnchorEl(event.currentTarget);
+    const handleDocActionMenuClick = (event, docId) => {
+        setDocActionMenu({ anchorEl: event.currentTarget, docId: docId });
     };
 
     const handleDocActionMenuClose = () => {
-        setDocActionAnchorEl(null);
+        setDocActionMenu({ anchorEl: null, docId: null });
     };
 
     const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
@@ -563,10 +627,10 @@ function NewJobSheetPage() {
                 open={showBackButtonDialog}
                 onClose={() => setShowBackButtonDialog(false)}
             >
-                <DialogTitle>Unsaved Documents</DialogTitle>
+                <DialogTitle>Unsaved Changes</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        You have unsaved documents. Are you sure you want to go back? The documents will be lost.
+                        You have unsaved documents or parts. Are you sure you want to go back? The changes will be lost.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -601,7 +665,7 @@ function NewJobSheetPage() {
                         </Button>
                         <Button variant="contained" component="label">
                             <UploadFileIcon />
-                            <input type="file" hidden onChange={handleFileUpload} />
+                            <input type="file" accept="image/*,application/pdf" hidden onChange={handleFileUpload} />
                         </Button>
                     </Box>
 
@@ -617,30 +681,30 @@ function NewJobSheetPage() {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {localDocuments.map((doc, index) => (
+                                        {localDocuments.sort((a, b) => a.uploadedAt - b.uploadedAt).map((doc, index) => (
                                             <TableRow key={index}>
                                                 <TableCell>{doc.name}</TableCell>
                                                 <TableCell>
                                                     {isSmallScreen ? (
                                                         <>
-                                                            <IconButton onClick={handleDocActionMenuClick}>
+                                                            <IconButton onClick={(e) => handleDocActionMenuClick(e, doc.id)}>
                                                                 <FlashOnIcon />
                                                             </IconButton>
                                                             <Menu
-                                                                anchorEl={docActionAnchorEl}
-                                                                open={Boolean(docActionAnchorEl)}
+                                                                anchorEl={docActionMenu.anchorEl}
+                                                                open={docActionMenu.docId === doc.id}
                                                                 onClose={handleDocActionMenuClose}
                                                             >
                                                                 <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
                                                                 <MenuItem onClick={() => { handleRename(doc, index, true); handleDocActionMenuClose(); }}>Rename</MenuItem>
-                                                                <MenuItem onClick={() => { handleDeleteLocalDocument(index); handleDocActionMenuClose(); }}>Delete</MenuItem>
+                                                                <MenuItem onClick={() => { handleDeleteLocalDocumentClick(index); handleDocActionMenuClose(); }}>Delete</MenuItem>
                                                             </Menu>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Button variant="outlined" onClick={() => handleView(doc)}>View</Button>
                                                             <Button variant="outlined" onClick={() => handleRename(doc, index, true)}>Rename</Button>
-                                                            <Button variant="outlined" onClick={() => handleDeleteLocalDocument(index)}>Delete</Button>
+                                                            <Button variant="outlined" onClick={() => handleDeleteLocalDocumentClick(index)}>Delete</Button>
                                                         </>
                                                     )}
                                                 </TableCell>
@@ -665,6 +729,7 @@ function NewJobSheetPage() {
                         fullWidth
                         value={newDocName}
                         onChange={(e) => setNewDocName(e.target.value)}
+                        onFocus={(event) => event.target.select()}
                     />
                 </DialogContent>
                 <DialogActions>
@@ -673,13 +738,37 @@ function NewJobSheetPage() {
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={!!viewDoc} onClose={handleViewClose}>
-                <DialogTitle>{viewDoc?.name}</DialogTitle>
+            <Dialog open={!!viewDoc} onClose={handleViewClose} fullWidth maxWidth="lg">
+                {viewDoc && (
+                    <>
+                        <DialogTitle>{viewDoc.name}</DialogTitle>
+                        <DialogContent>
+                            {viewDoc.fileType.startsWith('image/') ? (
+                                <TransformWrapper initialScale={1}>
+                                    <TransformComponent>
+                                        <img src={viewDoc.base64} alt={viewDoc.name} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 250px)' }} />
+                                    </TransformComponent>
+                                </TransformWrapper>
+                            ) : (
+                                <PDFViewer file={viewDoc.base64} />
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleViewClose}>Close</Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            <Dialog open={localDocumentToDelete !== null} onClose={() => setLocalDocumentToDelete(null)}>
+                <DialogTitle>Delete Document</DialogTitle>
                 <DialogContent>
-                    <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
+                    <DialogContentText>
+                        Are you sure you want to delete this document?
+                    </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleViewClose}>Close</Button>
+                    <Button onClick={() => setLocalDocumentToDelete(null)}>Cancel</Button>
+                    <Button onClick={handleDeleteLocalDocument} color="error">Delete</Button>
                 </DialogActions>
             </Dialog>
             <PartsPage open={openPartsPage} onClose={() => setOpenPartsPage(false)} jobSheetId={null} jobNumber={jobNumber} currentSheetIndex={0} jobSheets={[]} parts={parts} setParts={setParts} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Button, Box } from '@mui/material';
+import { Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
@@ -15,6 +15,7 @@ function EditCompanyProfilePage({ viewMode = false }) {
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyTelephone, setCompanyTelephone] = useState('');
   const [contacts, setContacts] = useState([{ name: '', email: '', cellphone: '' }]);
+  const [contactToDelete, setContactToDelete] = useState(null);
 
   const pageTitle = viewMode ? 'Company Profile' : (id ? 'Edit Company Profile' : 'New Company Profile');
 
@@ -34,6 +35,19 @@ function EditCompanyProfilePage({ viewMode = false }) {
       fetchProfile();
     }
   }, [id]);
+
+  const handleRemoveContactClick = (index) => {
+    setContactToDelete(index);
+  };
+
+  const handleRemoveContact = () => {
+    if (contactToDelete !== null) {
+        const values = [...contacts];
+        values.splice(contactToDelete, 1);
+        setContacts(values);
+        setContactToDelete(null);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -79,7 +93,18 @@ function EditCompanyProfilePage({ viewMode = false }) {
         handleSubmit={handleSubmit}
         viewMode={viewMode}
         id={id}
+        handleRemoveContactClick={handleRemoveContactClick}
       />
+      <Dialog open={contactToDelete !== null} onClose={() => setContactToDelete(null)}>
+        <DialogTitle>Delete Contact</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this contact?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setContactToDelete(null)}>Cancel</Button>
+          <Button onClick={handleRemoveContact} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

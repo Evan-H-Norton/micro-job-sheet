@@ -18,6 +18,7 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
     }, [localParts]);
 
     const [showAllParts, setShowAllParts] = useState(false);
+    const [partToDelete, setPartToDelete] = useState(null);
 
     const toggleShowAllParts = () => setShowAllParts(!showAllParts);
 
@@ -84,12 +85,19 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
         await updateDoc(partRef, { [field]: value });
     };
 
-    const handleRemovePart = async (id) => {
-        if (setLocalParts) {
-            setLocalParts(parts.filter(part => part.id !== id));
-        } else {
-            await deleteDoc(doc(db, 'parts', id));
-            setParts(parts.filter(part => part.id !== id));
+    const handleRemovePartClick = (id) => {
+        setPartToDelete(id);
+    };
+
+    const handleRemovePart = async () => {
+        if (partToDelete) {
+            if (setLocalParts) {
+                setLocalParts(parts.filter(part => part.id !== partToDelete));
+            } else {
+                await deleteDoc(doc(db, 'parts', partToDelete));
+                setParts(parts.filter(part => part.id !== partToDelete));
+            }
+            setPartToDelete(null);
         }
     };
 
@@ -167,7 +175,7 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
                                                     </TableCell>
                                                     {!viewMode && (
                                                         <TableCell sx={{ width: '10%' }}>
-                                                            <IconButton onClick={() => handleRemovePart(part.id)}>
+                                                            <IconButton onClick={() => handleRemovePartClick(part.id)}>
                                                                 <DeleteIcon />
                                                             </IconButton>
                                                         </TableCell>
@@ -222,7 +230,7 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
                                         </TableCell>
                                         {!viewMode && (
                                             <TableCell sx={{ width: '10%' }}>
-                                                <IconButton onClick={() => handleRemovePart(part.id)}>
+                                                <IconButton onClick={() => handleRemovePartClick(part.id)}>
                                                     <DeleteIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -249,6 +257,16 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
             <DialogActions>
                 <Button onClick={onClose} variant="outlined">Close</Button>
             </DialogActions>
+            <Dialog open={!!partToDelete} onClose={() => setPartToDelete(null)}>
+                <DialogTitle>Delete Part</DialogTitle>
+                <DialogContent>
+                    <Typography>Are you sure you want to delete this part?</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPartToDelete(null)}>Cancel</Button>
+                    <Button onClick={handleRemovePart} color="error">Delete</Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
     );
 };

@@ -9,6 +9,7 @@ import { ArrowBack, ArrowForward, FlashOn as FlashOnIcon } from '@mui/icons-mate
 
 import JobSheetForm from './JobSheetForm';
 import PartsPage from './PartsPage';
+import PDFViewer from './PDFViewer';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 
@@ -24,7 +25,7 @@ function JobSheetDetailsPage() {
   const [renameDoc, setRenameDoc] = useState(null);
   const [newDocName, setNewDocName] = useState('');
   const [viewDoc, setViewDoc] = useState(null);
-  const [docActionAnchorEl, setDocActionAnchorEl] = useState(null);
+  const [docActionMenu, setDocActionMenu] = useState({ anchorEl: null, docId: null });
   const [openPartsPage, setOpenPartsPage] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
@@ -112,19 +113,24 @@ function JobSheetDetailsPage() {
   };
 
   const handleView = (doc) => {
-    setViewDoc(doc);
+    if (doc.base64Chunks) { // This is a PDF
+        const reconstructedBase64 = `data:${doc.fileType};base64,${doc.base64Chunks.join('')}`;
+        setViewDoc({ ...doc, base64: reconstructedBase64 });
+    } else { // This is an image
+        setViewDoc(doc);
+    }
   };
 
   const handleViewClose = () => {
     setViewDoc(null);
   };
 
-  const handleDocActionMenuClick = (event) => {
-    setDocActionAnchorEl(event.currentTarget);
+  const handleDocActionMenuClick = (event, docId) => {
+    setDocActionMenu({ anchorEl: event.currentTarget, docId: docId });
   };
 
   const handleDocActionMenuClose = () => {
-    setDocActionAnchorEl(null);
+    setDocActionMenu({ anchorEl: null, docId: null });
   };
 
   const handleNavigateSheet = (direction) => {
@@ -263,12 +269,12 @@ function JobSheetDetailsPage() {
                               <TableCell>
                                   {isSmallScreen ? (
                                       <>
-                                          <IconButton onClick={handleDocActionMenuClick}>
+                                          <IconButton onClick={(e) => handleDocActionMenuClick(e, doc.id)}>
                                               <FlashOnIcon />
                                           </IconButton>
                                           <Menu
-                                              anchorEl={docActionAnchorEl}
-                                              open={Boolean(docActionAnchorEl)}
+                                              anchorEl={docActionMenu.anchorEl}
+                                              open={docActionMenu.docId === doc.id}
                                               onClose={handleDocActionMenuClose}
                                           >
                                               <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
@@ -309,12 +315,12 @@ function JobSheetDetailsPage() {
                         <TableCell>
                             {isSmallScreen ? (
                                 <>
-                                    <IconButton onClick={handleDocActionMenuClick}>
+                                    <IconButton onClick={(e) => handleDocActionMenuClick(e, doc.id)}>
                                         <FlashOnIcon />
                                     </IconButton>
                                     <Menu
-                                        anchorEl={docActionAnchorEl}
-                                        open={Boolean(docActionAnchorEl)}
+                                        anchorEl={docActionMenu.anchorEl}
+                                        open={docActionMenu.docId === doc.id}
                                         onClose={handleDocActionMenuClose}
                                     >
                                         <MenuItem onClick={() => { handleView(doc); handleDocActionMenuClose(); }}>View</MenuItem>
@@ -358,18 +364,26 @@ function JobSheetDetailsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!viewDoc} onClose={handleViewClose}>
-        <DialogTitle>{viewDoc?.name}</DialogTitle>
-        <DialogContent>
-          <TransformWrapper>
-            <TransformComponent>
-              <img src={viewDoc?.base64} alt={viewDoc?.name} style={{ maxWidth: '100%' }} />
-            </TransformComponent>
-          </TransformWrapper>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleViewClose}>Close</Button>
-        </DialogActions>
+      <Dialog open={!!viewDoc} onClose={handleViewClose} fullWidth maxWidth="lg">
+        {viewDoc && (
+            <>
+                <DialogTitle>{viewDoc.name}</DialogTitle>
+                <DialogContent>
+                    {viewDoc.fileType.startsWith('image/') ? (
+                        <TransformWrapper initialScale={1}>
+                            <TransformComponent>
+                                <img src={viewDoc.base64} alt={viewDoc.name} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 250px)' }} />
+                            </TransformComponent>
+                        </TransformWrapper>
+                    ) : (
+                        <PDFViewer file={viewDoc.base64} />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleViewClose}>Close</Button>
+                </DialogActions>
+            </>
+        )}
       </Dialog>
 
       <PartsPage

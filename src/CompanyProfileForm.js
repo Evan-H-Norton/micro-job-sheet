@@ -14,7 +14,8 @@ function CompanyProfileForm({
     setContacts, 
     handleSubmit, 
     viewMode, 
-    id 
+    id, 
+    handleRemoveContactClick 
 }) {
 
   const handleContactChange = (index, event) => {
@@ -25,12 +26,6 @@ function CompanyProfileForm({
 
   const handleAddContact = () => {
     setContacts([...contacts, { name: '', email: '', cellphone: '' }]);
-  };
-
-  const handleRemoveContact = (index) => {
-    const values = [...contacts];
-    values.splice(index, 1);
-    setContacts(values);
   };
 
   return (
@@ -96,7 +91,7 @@ function CompanyProfileForm({
             disabled={viewMode}
           />
           {!viewMode && (
-            <IconButton onClick={() => handleRemoveContact(index)}>
+            <IconButton onClick={() => handleRemoveContactClick(index)}>
               <DeleteIcon />
             </IconButton>
           )}

@@ -9,6 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) => {
     const [newPart, setNewPart] = useState({ quantity: 1, description: '', price: '' });
+    const [partToDelete, setPartToDelete] = useState(null);
 
     const handleAddPart = () => {
         setParts([...parts, { ...newPart, id: Date.now() }]);
@@ -26,9 +27,16 @@ const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) =
         setParts(updatedParts);
     };
 
-    const handleRemovePart = (index) => {
-        const updatedParts = parts.filter((_, i) => i !== index);
-        setParts(updatedParts);
+    const handleRemovePartClick = (index) => {
+        setPartToDelete(index);
+    };
+
+    const handleRemovePart = () => {
+        if (partToDelete !== null) {
+            const updatedParts = parts.filter((_, i) => i !== partToDelete);
+            setParts(updatedParts);
+            setPartToDelete(null);
+        }
     };
 
     const calculateTotal = () => {
@@ -81,7 +89,7 @@ const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) =
                                     </TableCell>
                                     {!viewMode && (
                                         <TableCell sx={{ width: '10%' }}>
-                                            <IconButton onClick={() => handleRemovePart(index)}>
+                                            <IconButton onClick={() => handleRemovePartClick(index)}>
                                                 <DeleteIcon />
                                             </IconButton>
                                         </TableCell>
@@ -107,6 +115,16 @@ const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) =
             <DialogActions>
                 <Button onClick={onClose} variant="outlined">Close</Button>
             </DialogActions>
+            <Dialog open={partToDelete !== null} onClose={() => setPartToDelete(null)}>
+                <DialogTitle>Delete Part</DialogTitle>
+                <DialogContent>
+                    <Typography>Are you sure you want to delete this part?</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPartToDelete(null)}>Cancel</Button>
+                    <Button onClick={handleRemovePart} color="error">Delete</Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
     );
 };
