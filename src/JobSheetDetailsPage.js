@@ -222,6 +222,7 @@ function JobSheetDetailsPage() {
                 collectionDelivery={jobSheet.collectionDelivery}
                 noCharge={jobSheet.noCharge}
                 remote={jobSheet.remote}
+                labourCharge={jobSheet.labourCharge}
             />
         </Paper>
       </Slide>

@@ -342,14 +342,14 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
                                     label="Callout"
-                                    disabled={viewMode}
+                                    disabled={viewMode || remote}
                                 />
                             </Grid>
                             <Grid item>
                                 <FormControlLabel
                                     control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
                                     label="Collection/Delivery"
-                                    disabled={viewMode}
+                                    disabled={viewMode || remote}
                                 />
                             </Grid>
                             <Grid item>
@@ -363,7 +363,7 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
                                     label="Remote"
-                                    disabled={viewMode}
+                                    disabled={viewMode || callout}
                                 />
                             </Grid>
                         </Grid>
@@ -492,7 +492,7 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
                                     label="Callout"
-                                    disabled={viewMode}
+                                    disabled={viewMode || remote}
                                 />
                             </Grid>
                             <Grid item>
@@ -506,7 +506,7 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
                                     label="Remote"
-                                    disabled={viewMode}
+                                    disabled={viewMode || callout}
                                 />
                             </Grid>
                         </Grid>
