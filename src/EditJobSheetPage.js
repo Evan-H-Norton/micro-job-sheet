@@ -29,6 +29,7 @@ function EditJobSheetPage() {
     const [arrivalTime, setArrivalTime] = useState('');
     const [departureTime, setDepartureTime] = useState('');
     const [totalTime, setTotalTime] = useState('');
+
     const [workCarriedOut, setWorkCarriedOut] = useState('');
     const [technicianName, setTechnicianName] = useState('');
     const [technicianSignature, setTechnicianSignature] = useState(null);
@@ -56,6 +57,10 @@ function EditJobSheetPage() {
     const [openPartsPage, setOpenPartsPage] = useState(false);
     const [showAllDocuments, setShowAllDocuments] = useState(false);
     const [documentToDelete, setDocumentToDelete] = useState(null);
+    const [callout, setCallout] = useState(false);
+    const [collectionDelivery, setCollectionDelivery] = useState(false);
+    const [noCharge, setNoCharge] = useState(false);
+    const [remote, setRemote] = useState(false);
 
     const toggleShowAllDocuments = () => setShowAllDocuments(!showAllDocuments);
     
@@ -104,6 +109,7 @@ function EditJobSheetPage() {
                 setArrivalTime(data.arrivalTime || '');
                 setDepartureTime(data.departureTime || '');
                 setTotalTime(data.totalTime || '');
+
                 setWorkCarriedOut(data.workCarriedOut || '');
                 setTechnicianName(data.technicianName || '');
                 setTechnicianSignature(data.technicianSignature || null);
@@ -115,6 +121,10 @@ function EditJobSheetPage() {
                 setStatus(data.status || 'Open');
                 setInvoiceNumber(data.invoiceNumber || '');
                 setInitialInvoiceNumber(data.invoiceNumber || '');
+                setCallout(data.callout || false);
+                setCollectionDelivery(data.collectionDelivery || false);
+                setNoCharge(data.noCharge || false);
+                setRemote(data.remote || false);
 
 
                 const jobSheetsCollection = collection(db, 'jobSheets');
@@ -210,14 +220,17 @@ function EditJobSheetPage() {
             const diff = departure - arrival;
 
             if (diff > 0) {
-                const hours = Math.floor(diff / 1000 / 60 / 60);
-                const minutes = Math.floor((diff / 1000 / 60) % 60);
+                const totalMinutes = Math.round(diff / 1000 / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
                 setTotalTime(`${hours}h ${minutes}m`);
             } else {
                 setTotalTime('');
             }
         }
     }, [arrivalTime, departureTime]);
+
+
 
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -298,6 +311,10 @@ function EditJobSheetPage() {
             tasks,
             outstanding,
             invoiceNumber,
+            callout,
+            collectionDelivery,
+            noCharge,
+            remote,
         };
 
         const updatePromises = [updateDoc(jobSheetRef, jobSheetData)];
@@ -550,6 +567,9 @@ function EditJobSheetPage() {
                     <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
                 </Menu>
             </Box>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                Edit Job Sheet
+            </Typography>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
                 <Paper sx={{ p: 3, my: 2, mb: 3 }}>
                     <JobSheetForm
@@ -576,6 +596,7 @@ function EditJobSheetPage() {
                         departureTime={departureTime}
                         setDepartureTime={setDepartureTime}
                         totalTime={totalTime}
+
                         technicianName={technicianName}
                         setTechnicianName={setTechnicianName}
                         technicianSignature={technicianSignature}
@@ -610,6 +631,14 @@ function EditJobSheetPage() {
                         date={date}
                         setDate={setDate}
                         jobNumber={jobNumber}
+                        callout={callout}
+                        setCallout={setCallout}
+                        collectionDelivery={collectionDelivery}
+                        setCollectionDelivery={setCollectionDelivery}
+                        noCharge={noCharge}
+                        setNoCharge={setNoCharge}
+                        remote={remote}
+                        setRemote={setRemote}
                     />
                 </Paper>
             </Slide>

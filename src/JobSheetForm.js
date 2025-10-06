@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Typography, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, FormControlLabel } from '@mui/material';
 import SignaturePadWrapper from './SignaturePad';
 
 function JobSheetForm({
@@ -27,6 +27,8 @@ function JobSheetForm({
     departureTime,
     setDepartureTime,
     totalTime,
+    labourCharge,
+    setLabourCharge,
     technicianName,
     setTechnicianName,
     technicianSignature,
@@ -63,13 +65,26 @@ function JobSheetForm({
     jobNumber,
     isEditMode = false,
     viewMode = false,
+    callout,
+    setCallout,
+    collectionDelivery,
+    setCollectionDelivery,
+    noCharge,
+    setNoCharge,
+    remote,
+    setRemote,
 }) {
+
+    const timeOptions = [];
+    for (let i = 0; i <= 16; i++) {
+        const hours = Math.floor(i / 2);
+        const minutes = (i % 2) * 30;
+        const time = `${hours}h ${minutes}m`;
+        timeOptions.push(time);
+    }
 
     return (
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
-                {viewMode ? 'Job Sheet Details' : (isEditMode ? 'Edit Job Sheet' : 'New Job Sheet')}
-            </Typography>
             <form onSubmit={onSubmit}>
                 <Grid container display="flex" gap={2} flexWrap="nowrap">
                     <Grid item width="33.333%">
@@ -110,8 +125,6 @@ function JobSheetForm({
                                     }
                                     setFaultComplaint('');
                                     setWorkCarriedOut('');
-                                    setArrivalTime('');
-                                    setDepartureTime('');
                                 } else if (newValue === 'Order #') {
                                     setTasks([]);
                                     setOutstanding('');
@@ -266,7 +279,7 @@ function JobSheetForm({
                         />
 
                         <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                            <Grid item width="33.333%">
+                            <Grid item width="25%">
                                 <TextField
                                     id="arrival-time"
                                     label="Arrival Time"
@@ -278,7 +291,7 @@ function JobSheetForm({
                                     InputProps={{ readOnly: viewMode }}
                                 />
                             </Grid>
-                            <Grid item width="33.333%">
+                            <Grid item width="25%">
                                 <TextField
                                     id="departure-time"
                                     label="Departure Time"
@@ -291,13 +304,66 @@ function JobSheetForm({
                                     InputProps={{ readOnly: viewMode }}
                                 />
                             </Grid>
-                            <Grid item width="33.333%">
+                            <Grid item width="25%">
                                 <TextField
                                     id="total-time"
                                     label="Total Time"
                                     fullWidth
                                     value={totalTime}
                                     InputProps={{ readOnly: true }}
+                                />
+                            </Grid>
+                            <Grid item width="25%">
+                                <FormControl fullWidth>
+                                    <InputLabel id="labour-charge-label">Labour Charge</InputLabel>
+                                    <Select
+                                        labelId="labour-charge-label"
+                                        id="labour-charge"
+                                        value={labourCharge}
+                                        label="Labour Charge"
+                                        onChange={(e) => setLabourCharge(e.target.value)}
+                                        readOnly={viewMode}
+                                    >
+                                        {timeOptions.map((time) => (
+                                            <MenuItem key={time} value={time}>
+                                                {time}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+
+                        <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center' }}>
+                            <Grid item>
+                                <Typography variant="subtitle1">Travel Type:</Typography>
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
+                                    label="Callout"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
+                                    label="Collection/Delivery"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={noCharge} onChange={(e) => setNoCharge(e.target.checked)} />}
+                                    label="No Charge"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
+                                    label="Remote"
+                                    disabled={viewMode}
                                 />
                             </Grid>
                         </Grid>
@@ -379,12 +445,77 @@ function JobSheetForm({
                             sx={{ mt: 2 }}
                             InputProps={{ readOnly: viewMode }}
                         />
+
+                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                            <Grid item width="33.333%">
+                                <TextField
+                                    id="arrival-time"
+                                    label="Arrival Time"
+                                    type="time"
+                                    fullWidth
+                                    value={arrivalTime}
+                                    onChange={(e) => setArrivalTime(e.target.value)}
+                                    InputLabelProps={{ shrink: true }}
+                                    InputProps={{ readOnly: viewMode }}
+                                />
+                            </Grid>
+                            <Grid item width="33.333%">
+                                <TextField
+                                    id="departure-time"
+                                    label="Departure Time"
+                                    type="time"
+                                    fullWidth
+                                    value={departureTime}
+                                    onChange={(e) => setDepartureTime(e.target.value)}
+                                    InputLabelProps={{ shrink: true }}
+                                    inputProps={{ min: arrivalTime }}
+                                    InputProps={{ readOnly: viewMode }}
+                                />
+                            </Grid>
+                            <Grid item width="33.333%">
+                                <TextField
+                                    id="total-time"
+                                    label="Total Time"
+                                    fullWidth
+                                    value={totalTime}
+                                    InputProps={{ readOnly: true }}
+                                />
+                            </Grid>
+
+                        </Grid>
+
+                        <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center' }}>
+                            <Grid item>
+                                <Typography variant="subtitle1">Travel Type:</Typography>
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
+                                    label="Callout"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={noCharge} onChange={(e) => setNoCharge(e.target.checked)} />}
+                                    label="No Charge"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
+                                    control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
+                                    label="Remote"
+                                    disabled={viewMode}
+                                />
+                            </Grid>
+                        </Grid>
                     </>
                 )}
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                {(status === 'Pending Invoice' || status === 'Invoiced') && (
+                {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
                     <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         <Grid item xs={12} sm={6}>
                             <TextField

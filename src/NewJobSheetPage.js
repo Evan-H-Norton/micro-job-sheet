@@ -32,6 +32,7 @@ function NewJobSheetPage() {
     const [arrivalTime, setArrivalTime] = useState('');
     const [departureTime, setDepartureTime] = useState('');
     const [totalTime, setTotalTime] = useState('');
+
     const [workCarriedOut, setWorkCarriedOut] = useState('');
     const [technicianName, setTechnicianName] = useState('');
     const [technicianSignature, setTechnicianSignature] = useState(null);
@@ -40,6 +41,11 @@ function NewJobSheetPage() {
     const [customerName, setCustomerName] = useState('');
     const [customerSignature, setCustomerSignature] = useState(null);
     const [outstanding, setOutstanding] = useState('');
+    const [callout, setCallout] = useState(false);
+    const [collectionDelivery, setCollectionDelivery] = useState(false);
+    const [noCharge, setNoCharge] = useState(false);
+    const [remote, setRemote] = useState(false);
+    const [labourCharge, setLabourCharge] = useState('0h 0m');
     
     const [openDocumentsDialog, setOpenDocumentsDialog] = useState(false);
     const slideDirection = location.state?.direction || 'up';
@@ -190,14 +196,17 @@ function NewJobSheetPage() {
             const diff = departure - arrival;
 
             if (diff > 0) {
-                const hours = Math.floor(diff / 1000 / 60 / 60);
-                const minutes = Math.floor((diff / 1000 / 60) % 60);
+                const totalMinutes = Math.round(diff / 1000 / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
                 setTotalTime(`${hours}h ${minutes}m`);
             } else {
                 setTotalTime('');
             }
         }
     }, [arrivalTime, departureTime]);
+
+
 
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -466,6 +475,11 @@ function NewJobSheetPage() {
             status: 'Open', createdAt: new Date(),
             tasks,
             outstanding,
+            callout,
+            collectionDelivery,
+            noCharge,
+            remote,
+            labourCharge,
         };
         
         const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
@@ -545,6 +559,9 @@ function NewJobSheetPage() {
                     <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
                 </Menu>
             </Box>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                New Job Sheet
+            </Typography>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
                 <Paper sx={{ p: 3, my: 2, mb: 3 }}>
                     <JobSheetForm
@@ -568,6 +585,7 @@ function NewJobSheetPage() {
                         departureTime={departureTime}
                         setDepartureTime={setDepartureTime}
                         totalTime={totalTime}
+
                         technicianName={technicianName}
                         setTechnicianName={setTechnicianName}
                         technicianSignature={technicianSignature}
@@ -602,6 +620,16 @@ function NewJobSheetPage() {
                         date={date}
                         setDate={setDate}
                         jobNumber={jobNumber}
+                        callout={callout}
+                        setCallout={setCallout}
+                        collectionDelivery={collectionDelivery}
+                        setCollectionDelivery={setCollectionDelivery}
+                        noCharge={noCharge}
+                        setNoCharge={setNoCharge}
+                        remote={remote}
+                        setRemote={setRemote}
+                        labourCharge={labourCharge}
+                        setLabourCharge={setLabourCharge}
                     />
                 </Paper>
             </Slide>

@@ -187,6 +187,9 @@ function JobSheetDetailsPage() {
           )}
         </Box>
       </Box>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+        Job Sheet Details
+      </Typography>
       <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
             <JobSheetForm
@@ -196,6 +199,8 @@ function JobSheetDetailsPage() {
                 orderValue={jobSheet.orderValue}
                 tasks={jobSheet.tasks}
                 outstanding={jobSheet.outstanding}
+                status={jobSheet.status}
+                invoiceNumber={jobSheet.invoiceNumber}
                 faultComplaint={jobSheet.faultComplaint}
                 workCarriedOut={jobSheet.workCarriedOut}
                 arrivalTime={jobSheet.arrivalTime}
@@ -213,6 +218,10 @@ function JobSheetDetailsPage() {
                 contactEmailInput={jobSheet.contact.email}
                 date={jobSheet.date}
                 jobNumber={jobSheet.jobNumber}
+                callout={jobSheet.callout}
+                collectionDelivery={jobSheet.collectionDelivery}
+                noCharge={jobSheet.noCharge}
+                remote={jobSheet.remote}
             />
         </Paper>
       </Slide>
