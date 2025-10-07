@@ -7,7 +7,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, updateDoc, setDoc, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
@@ -143,15 +143,7 @@ function NewJobSheetPage() {
                     setContactEmailInput(contact.email || '');
                 }
             } else {
-                const countersRef = doc(db, 'counters', 'jobOrder');
-                const countersSnap = await getDoc(countersRef);
-                if (countersSnap.exists()) {
-                    const data = countersSnap.data();
-                    setJobNumber(data.lastJobNumber + 1);
-                } else {
-                    await setDoc(countersRef, { lastJobNumber: 0 });
-                    setJobNumber(1);
-                }
+                setJobNumber("New");
             }
         };
         fetchInitialData();
@@ -430,95 +422,98 @@ function NewJobSheetPage() {
     };
 
     const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
-        let finalCompanyId = existingCompany?.id || null;
-        let finalContacts = existingCompany ? [...(existingCompany.contacts || [])] : [];
-
-        if (!existingCompany && createNewCompany) {
-            const newCompanyData = {
-                companyName: companyNameInput,
-                companyAddress: companyAddress,
-                companyTelephone: companyTelephone,
-                contacts: [],
-            };
-            const newCompanyRef = await addDoc(collection(db, 'companyProfiles'), newCompanyData);
-            finalCompanyId = newCompanyRef.id;
-        }
-
-        const newContact = {
-            name: contactNameInput,
-            cellphone: contactCellphoneInput,
-            email: contactEmailInput,
-        };
-
-        if (newContact.name) {
-            const contactIndex = finalContacts.findIndex(c => c.name === newContact.name);
-            if (contactIndex > -1) {
-                finalContacts[contactIndex] = newContact;
-            } else {
-                finalContacts.push(newContact);
-            }
-
-            if (finalCompanyId) {
-                await updateDoc(doc(db, 'companyProfiles', finalCompanyId), {
-                    contacts: finalContacts,
-                    companyAddress: companyAddress,
-                    companyTelephone: companyTelephone,
-                });
-            }
-        }
-
-        const jobSheetData = {
-            jobNumber, orderType, orderValue, date, companyId: finalCompanyId,
-            companyName: companyNameInput, companyAddress: companyAddress,
-            companyTelephone: companyTelephone, contact: newContact,
-            faultComplaint, arrivalTime, departureTime, totalTime,
-            workCarriedOut, technicianName, technicianSignature, customerSignature,
-            status: 'Open', createdAt: new Date(),
-            tasks,
-            outstanding,
-            callout,
-            collectionDelivery,
-            noCharge,
-            remote,
-            labourCharge,
-        };
-        
-        const promise = addDoc(collection(db, 'jobSheets'), jobSheetData)
-            .then((docRef) => {
-                const jobSheetId = docRef.id;
+        try {
+            const jobSheetId = await runTransaction(db, async (transaction) => {
                 const countersRef = doc(db, 'counters', 'jobOrder');
-                const updateCountersPromise = updateDoc(countersRef, {
-                    lastJobNumber: jobNumber,
+                const countersSnap = await transaction.get(countersRef);
+                let newJobNumber;
+
+                if (!countersSnap.exists()) {
+                    transaction.set(countersRef, { lastJobNumber: 1 });
+                    newJobNumber = 1;
+                } else {
+                    const lastJobNumber = countersSnap.data().lastJobNumber;
+                    newJobNumber = lastJobNumber + 1;
+                    transaction.update(countersRef, { lastJobNumber: newJobNumber });
+                }
+
+                let finalCompanyId = existingCompany?.id || null;
+                let finalContacts = existingCompany ? [...(existingCompany.contacts || [])] : [];
+
+                if (!existingCompany && createNewCompany) {
+                    const newCompanyData = {
+                        companyName: companyNameInput,
+                        companyAddress: companyAddress,
+                        companyTelephone: companyTelephone,
+                        contacts: [],
+                    };
+                    const newCompanyRef = doc(collection(db, 'companyProfiles'));
+                    transaction.set(newCompanyRef, newCompanyData);
+                    finalCompanyId = newCompanyRef.id;
+                }
+
+                const newContact = {
+                    name: contactNameInput,
+                    cellphone: contactCellphoneInput,
+                    email: contactEmailInput,
+                };
+
+                if (newContact.name) {
+                    const contactIndex = finalContacts.findIndex(c => c.name === newContact.name);
+                    if (contactIndex > -1) {
+                        finalContacts[contactIndex] = newContact;
+                    } else {
+                        finalContacts.push(newContact);
+                    }
+
+                    if (finalCompanyId) {
+                        transaction.update(doc(db, 'companyProfiles', finalCompanyId), {
+                            contacts: finalContacts,
+                            companyAddress: companyAddress,
+                            companyTelephone: companyTelephone,
+                        });
+                    }
+                }
+
+                const jobSheetData = {
+                    jobNumber: newJobNumber, orderType, orderValue, date, companyId: finalCompanyId,
+                    companyName: companyNameInput, companyAddress: companyAddress,
+                    companyTelephone: companyTelephone, contact: newContact,
+                    faultComplaint, arrivalTime, departureTime, totalTime,
+                    workCarriedOut, technicianName, technicianSignature, customerSignature,
+                    status: 'Open', createdAt: new Date(),
+                    tasks,
+                    outstanding,
+                    callout,
+                    collectionDelivery,
+                    noCharge,
+                    remote,
+                    labourCharge,
+                };
+
+                const jobSheetRef = doc(collection(db, 'jobSheets'));
+                transaction.set(jobSheetRef, jobSheetData);
+
+                localDocuments.forEach(docData => {
+                    const docRef = doc(collection(db, 'documents'));
+                    transaction.set(docRef, { ...docData, jobSheetId: jobSheetRef.id, jobNumber: newJobNumber });
                 });
 
-                const uploadDocumentsPromise = Promise.all(localDocuments.map(doc => {
-                    return addDoc(collection(db, 'documents'), { ...doc, jobSheetId: jobSheetId, jobNumber: jobNumber });
-                }));
+                parts.forEach(part => {
+                    const partRef = doc(collection(db, 'parts'));
+                    transaction.set(partRef, { ...part, jobSheetId: jobSheetRef.id, jobNumber: newJobNumber });
+                });
 
-                const uploadPartsPromise = Promise.all(parts.map(part => {
-                    return addDoc(collection(db, 'parts'), { ...part, jobSheetId: jobSheetId, jobNumber: jobNumber });
-                }));
-
-                return Promise.all([updateCountersPromise, uploadDocumentsPromise, uploadPartsPromise]).then(() => jobSheetId);
+                return jobSheetRef.id;
             });
 
-        toast.promise(promise, {
-            loading: 'Creating job sheet...',
-            success: async (jobSheetId) => {
-                const jobSheetsCollection = collection(db, 'jobSheets');
-                const q = query(jobSheetsCollection, where('jobNumber', '==', jobNumber));
-                const querySnapshot = await getDocs(q);
-                if (querySnapshot.size > 1) {
-                    const updatePromises = querySnapshot.docs.map((doc) => {
-                        return updateDoc(doc.ref, { status: 'In Progress' });
-                    });
-                    await Promise.all(updatePromises);
-                }
-                navigate(`/job-sheet/edit/${jobSheetId}`, { state: { direction: 'left' } });
-                return 'Job Sheet created successfully!';
-            },
-            error: 'Failed to create job sheet. Please try again.',
-        });
+            toast.success('Job Sheet created successfully!');
+            navigate('/');
+
+        } catch (error) {
+            toast.error('Failed to create job sheet. Please try again.');
+            console.error("Transaction failed: ", error);
+        }
     };
 
     const handleSubmit = async (event) => {
