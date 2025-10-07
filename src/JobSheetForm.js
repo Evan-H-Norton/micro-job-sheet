@@ -1,5 +1,6 @@
 import React from 'react';
-import { Typography, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, FormControlLabel } from '@mui/material';
+import { Typography, TextField, Button, Box, Autocomplete, Grid, Divider, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, FormControlLabel, IconButton } from '@mui/material';
+import { AddCircleOutline, RemoveCircleOutline } from '@mui/icons-material';
 import SignaturePadWrapper from './SignaturePad';
 
 function JobSheetForm({
@@ -75,13 +76,7 @@ function JobSheetForm({
     setRemote,
 }) {
 
-    const timeOptions = [];
-    for (let i = 0; i <= 16; i++) {
-        const hours = Math.floor(i / 2);
-        const minutes = (i % 2) * 30;
-        const time = `${hours}h ${minutes}m`;
-        timeOptions.push(time);
-    }
+
 
     return (
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
@@ -304,7 +299,7 @@ function JobSheetForm({
                                     InputProps={{ readOnly: viewMode }}
                                 />
                             </Grid>
-                            <Grid item width="25%">
+                            <Grid item width="50%">
                                 <TextField
                                     id="total-time"
                                     label="Total Time"
@@ -312,25 +307,6 @@ function JobSheetForm({
                                     value={totalTime}
                                     InputProps={{ readOnly: true }}
                                 />
-                            </Grid>
-                            <Grid item width="25%">
-                                <FormControl fullWidth>
-                                    <InputLabel id="labour-charge-label">Labour Charge</InputLabel>
-                                    <Select
-                                        labelId="labour-charge-label"
-                                        id="labour-charge"
-                                        value={labourCharge}
-                                        label="Labour Charge"
-                                        onChange={(e) => setLabourCharge(e.target.value)}
-                                        readOnly={viewMode}
-                                    >
-                                        {timeOptions.map((time) => (
-                                            <MenuItem key={time} value={time}>
-                                                {time}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
                             </Grid>
                         </Grid>
 
@@ -349,7 +325,7 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
                                     label="Collection/Delivery"
-                                    disabled={viewMode || remote}
+                                    disabled={viewMode || remote || callout}
                                 />
                             </Grid>
                             <Grid item>
@@ -363,22 +339,45 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
                                     label="Remote"
-                                    disabled={viewMode || callout}
+                                    disabled={viewMode || callout || collectionDelivery}
                                 />
                             </Grid>
                         </Grid>
-
-                        <TextField
-                            id="work-carried-out"
-                            label="Work Carried Out"
-                            fullWidth
-                            sx={{ mt: 2 }}
-                            multiline
-                            rows={4}
-                            value={workCarriedOut}
-                            onChange={(e) => setWorkCarriedOut(e.target.value)}
-                            InputProps={{ readOnly: viewMode }}
-                        />
+                        
+                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                            <Grid item width="50%">
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <IconButton onClick={() => {
+                                        const currentValue = parseFloat(labourCharge) || 0;
+                                        setLabourCharge(Math.max(0, currentValue - 0.5) + 'h');
+                                    }} disabled={viewMode}><RemoveCircleOutline /></IconButton>
+                                    <TextField
+                                        id="labour-charge"
+                                        label="Labour Charge"
+                                        value={labourCharge}
+                                        onChange={(e) => setLabourCharge(e.target.value)}
+                                        InputProps={{ readOnly: viewMode }}
+                                        sx={{ width: '100px' }}
+                                    />
+                                    <IconButton onClick={() => {
+                                        const currentValue = parseFloat(labourCharge) || 0;
+                                        setLabourCharge((currentValue + 0.5) + 'h');
+                                    }} disabled={viewMode}><AddCircleOutline /></IconButton>
+                                </Box>
+                            </Grid>
+                            {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
+                            <Grid item width="50%">
+                                <TextField
+                                    id="invoiceNumber"
+                                    label="Invoice Number"
+                                    fullWidth
+                                    value={invoiceNumber}
+                                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                                    InputProps={{ readOnly: viewMode }}
+                                />
+                            </Grid>
+                            )}
+                        </Grid>
                     </>
                 ) : (
                     <>
@@ -497,6 +496,13 @@ function JobSheetForm({
                             </Grid>
                             <Grid item>
                                 <FormControlLabel
+                                    control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
+                                    label="Collection/Delivery"
+                                    disabled={viewMode || remote || callout}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <FormControlLabel
                                     control={<Checkbox checked={noCharge} onChange={(e) => setNoCharge(e.target.checked)} />}
                                     label="No Charge"
                                     disabled={viewMode}
@@ -506,29 +512,51 @@ function JobSheetForm({
                                 <FormControlLabel
                                     control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
                                     label="Remote"
-                                    disabled={viewMode || callout}
+                                    disabled={viewMode || callout || collectionDelivery}
                                 />
                             </Grid>
+                        </Grid>
+
+                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                            <Grid item width="50%">
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <IconButton onClick={() => {
+                                        const currentValue = parseFloat(labourCharge) || 0;
+                                        setLabourCharge(Math.max(0, currentValue - 0.5) + 'h');
+                                    }} disabled={viewMode}><RemoveCircleOutline /></IconButton>
+                                    <TextField
+                                        id="labour-charge"
+                                        label="Labour Charge"
+                                        value={labourCharge}
+                                        onChange={(e) => setLabourCharge(e.target.value)}
+                                        InputProps={{ readOnly: viewMode }}
+                                        sx={{ width: '100px' }}
+                                    />
+                                    <IconButton onClick={() => {
+                                        const currentValue = parseFloat(labourCharge) || 0;
+                                        setLabourCharge((currentValue + 0.5) + 'h');
+                                    }} disabled={viewMode}><AddCircleOutline /></IconButton>
+                                </Box>
+                            </Grid>
+                            {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
+                            <Grid item width="50%">
+                                <TextField
+                                    id="invoiceNumber"
+                                    label="Invoice Number"
+                                    fullWidth
+                                    value={invoiceNumber}
+                                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                                    InputProps={{ readOnly: viewMode }}
+                                />
+                            </Grid>
+                            )}
                         </Grid>
                     </>
                 )}
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
-                    <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                id="invoiceNumber"
-                                label="Invoice Number"
-                                fullWidth
-                                value={invoiceNumber}
-                                onChange={(e) => setInvoiceNumber(e.target.value)}
-                                InputProps={{ readOnly: viewMode }}
-                            />
-                        </Grid>
-                    </Grid>
-                )}
+
 
                 <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                     <Grid item xs={12} sm={6}>
