@@ -60,6 +60,7 @@ function NewJobSheetPage() {
     const [openPartsPage, setOpenPartsPage] = useState(false);
     const [parts, setParts] = useState([]);
     const [localDocumentToDelete, setLocalDocumentToDelete] = useState(null);
+    const partsCharge = parts.reduce((total, part) => total + part.price * part.quantity, 0);
 
     const taskNames = [
         'Client Logbook Check',
@@ -630,6 +631,7 @@ function NewJobSheetPage() {
                         setRemote={setRemote}
                         labourCharge={labourCharge}
                         setLabourCharge={setLabourCharge}
+                        partsCharge={partsCharge}
                     />
                 </Paper>
             </Slide>

@@ -265,49 +265,31 @@ function JobSheetForm({
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                            <Grid item width="33.333%">
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <IconButton onClick={() => {
-                                        const currentValue = parseFloat(labourCharge) || 0;
-                                        setLabourCharge(Math.max(0, currentValue - 0.5) + 'h');
-                                    }} disabled={viewMode}><RemoveCircleOutline /></IconButton>
-                                    <TextField
-                                        id="labour-charge"
-                                        label="Labour Charge"
-                                        value={labourCharge}
-                                        onChange={(e) => setLabourCharge(e.target.value)}
-                                        InputProps={{ readOnly: viewMode }}
-                                        sx={{ width: '100px' }}
-                                    />
-                                    <IconButton onClick={() => {
-                                        const currentValue = parseFloat(labourCharge) || 0;
-                                        setLabourCharge((currentValue + 0.5) + 'h');
-                                    }} disabled={viewMode}><AddCircleOutline /></IconButton>
-                                </Box>
-                            </Grid>
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="parts-charge"
-                                    label="Parts Charge"
-                                    fullWidth
-                                    value={formatCurrency(partsCharge)}
-                                    InputProps={{ readOnly: true }}
-                                />
-                            </Grid>
-                            {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="invoiceNumber"
-                                    label="Invoice Number"
-                                    fullWidth
-                                    value={invoiceNumber}
-                                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                                    InputProps={{ readOnly: viewMode }}
-                                />
-                            </Grid>
-                            )}
-                        </Grid>
+                {orderType === 'Order #' ? (
+                    <>
+                        <TextField
+                            id="fault-complaint"
+                            label="Fault/Complaint"
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={faultComplaint}
+                            onChange={(e) => setFaultComplaint(e.target.value)}
+                            sx={{ mt: 2 }}
+                            InputProps={{ readOnly: viewMode }}
+                        />
+                        <TextField
+                            id="work-carried-out"
+                            label="Work Carried Out"
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={workCarriedOut}
+                            onChange={(e) => setWorkCarriedOut(e.target.value)}
+                            sx={{ mt: 2 }}
+                            InputProps={{ readOnly: viewMode }}
+                        />
+
                     </>
                 ) : (
                     <>
@@ -374,124 +356,125 @@ function JobSheetForm({
                             sx={{ mt: 2 }}
                             InputProps={{ readOnly: viewMode }}
                         />
-
-                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="arrival-time"
-                                    label="Arrival Time"
-                                    type="time"
-                                    fullWidth
-                                    value={arrivalTime}
-                                    onChange={(e) => setArrivalTime(e.target.value)}
-                                    InputLabelProps={{ shrink: true }}
-                                    InputProps={{ readOnly: viewMode }}
-                                />
-                            </Grid>
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="departure-time"
-                                    label="Departure Time"
-                                    type="time"
-                                    fullWidth
-                                    value={departureTime}
-                                    onChange={(e) => setDepartureTime(e.target.value)}
-                                    InputLabelProps={{ shrink: true }}
-                                    inputProps={{ min: arrivalTime }}
-                                    InputProps={{ readOnly: viewMode }}
-                                />
-                            </Grid>
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="total-time"
-                                    label="Total Time"
-                                    fullWidth
-                                    value={totalTime}
-                                    InputProps={{ readOnly: true }}
-                                />
-                            </Grid>
-
-                        </Grid>
-
-                        <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center' }}>
-                            <Grid item>
-                                <Typography variant="subtitle1">Travel Type:</Typography>
-                            </Grid>
-                            <Grid item>
-                                <FormControlLabel
-                                    control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
-                                    label="Callout"
-                                    disabled={viewMode || remote}
-                                />
-                            </Grid>
-                            <Grid item>
-                                <FormControlLabel
-                                    control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
-                                    label="Collection/Delivery"
-                                    disabled={viewMode || remote || callout}
-                                />
-                            </Grid>
-                            <Grid item>
-                                <FormControlLabel
-                                    control={<Checkbox checked={noCharge} onChange={(e) => setNoCharge(e.target.checked)} />}
-                                    label="No Charge"
-                                    disabled={viewMode}
-                                />
-                            </Grid>
-                            <Grid item>
-                                <FormControlLabel
-                                    control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
-                                    label="Remote"
-                                    disabled={viewMode || callout || collectionDelivery}
-                                />
-                            </Grid>
-                        </Grid>
-
-                        <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
-                            <Grid item width="33.333%">
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <IconButton onClick={() => {
-                                        const currentValue = parseFloat(labourCharge) || 0;
-                                        setLabourCharge(Math.max(0, currentValue - 0.5) + 'h');
-                                    }} disabled={viewMode}><RemoveCircleOutline /></IconButton>
-                                    <TextField
-                                        id="labour-charge"
-                                        label="Labour Charge"
-                                        value={labourCharge}
-                                        onChange={(e) => setLabourCharge(e.target.value)}
-                                        InputProps={{ readOnly: viewMode }}
-                                        sx={{ width: '100px' }}
-                                    />
-                                    <IconButton onClick={() => {
-                                        const currentValue = parseFloat(labourCharge) || 0;
-                                        setLabourCharge((currentValue + 0.5) + 'h');
-                                    }} disabled={viewMode}><AddCircleOutline /></IconButton>
-                                </Box>
-                            </Grid>
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="parts-charge"
-                                    label="Parts Charge"
-                                    fullWidth
-                                    value={formatCurrency(partsCharge)}
-                                    InputProps={{ readOnly: true }}
-                                />
-                            </Grid>
-                            {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
-                            <Grid item width="33.333%">
-                                <TextField
-                                    id="invoiceNumber"
-                                    label="Invoice Number"
-                                    fullWidth
-                                    value={invoiceNumber}
-                                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                                    InputProps={{ readOnly: viewMode }}
-                                />
-                            </Grid>
-                            )}
-                        </Grid>
                     </>
                 )}
+
+                <Grid container display="flex" gap={2} flexWrap="nowrap" sx={{ mt: 2 }}>
+                    <Grid item width="33.333%">
+                        <TextField
+                            id="arrival-time"
+                            label="Arrival Time"
+                            type="time"
+                            fullWidth
+                            value={arrivalTime}
+                            onChange={(e) => setArrivalTime(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            InputProps={{ readOnly: viewMode }}
+                        />
+                    </Grid>
+                    <Grid item width="33.333%">
+                        <TextField
+                            id="departure-time"
+                            label="Departure Time"
+                            type="time"
+                            fullWidth
+                            value={departureTime}
+                            onChange={(e) => setDepartureTime(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            inputProps={{ min: arrivalTime }}
+                            InputProps={{ readOnly: viewMode }}
+                        />
+                    </Grid>
+                    <Grid item width="33.333%">
+                        <TextField
+                            id="total-time"
+                            label="Total Time"
+                            fullWidth
+                            value={totalTime}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                </Grid>
+
+                <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center' }}>
+                    <Grid item>
+                        <Typography variant="subtitle1">Travel Type:</Typography>
+                    </Grid>
+                    <Grid item>
+                        <FormControlLabel
+                            control={<Checkbox checked={callout} onChange={(e) => setCallout(e.target.checked)} />}
+                            label="Callout"
+                            disabled={viewMode || remote}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <FormControlLabel
+                            control={<Checkbox checked={collectionDelivery} onChange={(e) => setCollectionDelivery(e.target.checked)} />}
+                            label="Collection/Delivery"
+                            disabled={viewMode || remote || callout}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <FormControlLabel
+                            control={<Checkbox checked={noCharge} onChange={(e) => setNoCharge(e.target.checked)} />}
+                            label="No Charge"
+                            disabled={viewMode}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <FormControlLabel
+                            control={<Checkbox checked={remote} onChange={(e) => setRemote(e.target.checked)} />}
+                            label="Remote"
+                            disabled={viewMode || callout || collectionDelivery}
+                        />
+                    </Grid>
+                </Grid>
+                <Grid container display="flex" gap={2} flexWrap={isSmallScreen ? "wrap" : "nowrap"} sx={{ mt: 2 }}>
+                    <Grid item width={isSmallScreen ? "100%" : (status === 'Open' ? "50%" : "33.333%")}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                            <IconButton onClick={() => {
+                                const currentValue = parseFloat(labourCharge) || 0;
+                                setLabourCharge(Math.max(0, currentValue - 0.5) + 'h');
+                            }} disabled={viewMode}><RemoveCircleOutline /></IconButton>
+                            <TextField
+                                id="labour-charge"
+                                label="Labour Charge"
+                                value={labourCharge}
+                                onChange={(e) => setLabourCharge(e.target.value)}
+                                InputProps={{ readOnly: viewMode }}
+                                fullWidth
+                            />
+                            <IconButton onClick={() => {
+                                const currentValue = parseFloat(labourCharge) || 0;
+                                setLabourCharge((currentValue + 0.5) + 'h');
+                            }} disabled={viewMode}><AddCircleOutline /></IconButton>
+                        </Box>
+                    </Grid>
+                    <Grid item width={isSmallScreen ? "100%" : (status === 'Open' ? "50%" : "33.333%")}>
+                        <TextField
+                            id="parts-charge"
+                            label="Parts Charge"
+                            fullWidth
+                            value={formatCurrency(partsCharge)}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                    {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
+                    <Grid item width={isSmallScreen ? "100%" : "33.333%"}>
+                        <TextField
+                            id="invoiceNumber"
+                            label="Invoice Number"
+                            fullWidth
+                            value={invoiceNumber}
+                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            InputProps={{ readOnly: viewMode }}
+                        />
+                    </Grid>
+                    )}
+                </Grid>
+                <Typography variant="caption" display="block" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
+                    All prices contained in this document are Exclusive of VAT unless otherwise specified
+                </Typography>
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
