@@ -61,6 +61,17 @@ function EditJobSheetPage() {
     const [collectionDelivery, setCollectionDelivery] = useState(false);
     const [noCharge, setNoCharge] = useState(false);
     const [remote, setRemote] = useState(false);
+    const [labourCharge, setLabourCharge] = useState('');
+    const [parts, setParts] = useState([]);
+    const [partsCharge, setPartsCharge] = useState(0);
+
+    const calculateTotal = (parts) => {
+        return parts.reduce((total, part) => total + (Number(part.quantity) * Number(part.price)), 0);
+    };
+
+    useEffect(() => {
+        setPartsCharge(calculateTotal(parts));
+    }, [parts]);
 
     const toggleShowAllDocuments = () => setShowAllDocuments(!showAllDocuments);
     
@@ -125,6 +136,7 @@ function EditJobSheetPage() {
                 setCollectionDelivery(data.collectionDelivery || false);
                 setNoCharge(data.noCharge || false);
                 setRemote(data.remote || false);
+                setLabourCharge(data.labourCharge || '');
 
 
                 const jobSheetsCollection = collection(db, 'jobSheets');
@@ -181,6 +193,21 @@ function EditJobSheetPage() {
             fetchDocuments();
         }
     }, [openDocumentsDialog, id, fetchDocuments]);
+
+    const fetchParts = useCallback(async () => {
+        if (id) {
+            const partsCollection = collection(db, 'parts');
+            const q = query(partsCollection, where('jobSheetId', '==', id));
+            const partsSnapshot = await getDocs(q);
+            setParts(partsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (openPartsPage) {
+            fetchParts();
+        }
+    }, [openPartsPage, fetchParts]);
 
     useEffect(() => {
         if (selectedCompany) {
@@ -303,6 +330,7 @@ function EditJobSheetPage() {
             arrivalTime,
             departureTime,
             totalTime,
+            labourCharge,
             workCarriedOut,
             technicianName,
             technicianSignature,
@@ -596,6 +624,9 @@ function EditJobSheetPage() {
                         departureTime={departureTime}
                         setDepartureTime={setDepartureTime}
                         totalTime={totalTime}
+                        labourCharge={labourCharge}
+                        setLabourCharge={setLabourCharge}
+                        partsCharge={partsCharge}
 
                         technicianName={technicianName}
                         setTechnicianName={setTechnicianName}
@@ -836,7 +867,7 @@ function EditJobSheetPage() {
                     <Button onClick={handleDeleteDocument} color="error">Delete</Button>
                 </DialogActions>
             </Dialog>
-            <PartsPage open={openPartsPage} onClose={() => setOpenPartsPage(false)} jobSheetId={id} jobNumber={jobNumber} currentSheetIndex={currentSheetIndex} jobSheets={jobSheets} />
+            <PartsPage open={openPartsPage} onClose={() => setOpenPartsPage(false)} jobSheetId={id} jobNumber={jobNumber} currentSheetIndex={currentSheetIndex} jobSheets={jobSheets} parts={parts} setParts={setParts} />
         </Box>
     );
 }

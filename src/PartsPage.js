@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Paper, IconButton, TextField, Typography, Box
@@ -6,7 +6,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { db } from './firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, viewMode = false, jobSheets = [], parts: localParts, setParts: setLocalParts }) => {
     const [parts, setParts] = useState([]);
@@ -22,30 +22,7 @@ const PartsPage = ({ open, onClose, jobSheetId, jobNumber, currentSheetIndex, vi
 
     const toggleShowAllParts = () => setShowAllParts(!showAllParts);
 
-    const fetchParts = useCallback(async () => {
-        if (setLocalParts) return;
-        if (showAllParts) {
-            if (jobNumber) {
-                const partsCollection = collection(db, 'parts');
-                const q = query(partsCollection, where('jobNumber', '==', jobNumber));
-                const partsSnapshot = await getDocs(q);
-                setParts(partsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            }
-        } else {
-            if (jobSheetId) {
-                const partsCollection = collection(db, 'parts');
-                const q = query(partsCollection, where('jobSheetId', '==', jobSheetId));
-                const partsSnapshot = await getDocs(q);
-                setParts(partsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            }
-        }
-    }, [jobSheetId, jobNumber, showAllParts, setLocalParts]);
 
-    useEffect(() => {
-        if (open) {
-            fetchParts();
-        }
-    }, [open, fetchParts]);
 
     const handleAddPart = async () => {
         const newPartData = { quantity: 1, description: '', price: '' };
