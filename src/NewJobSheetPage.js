@@ -423,7 +423,7 @@ function NewJobSheetPage() {
 
     const proceedToCreateJobSheet = async (existingCompany = null, createNewCompany = true) => {
         try {
-            const jobSheetId = await runTransaction(db, async (transaction) => {
+            await runTransaction(db, async (transaction) => {
                 const countersRef = doc(db, 'counters', 'jobOrder');
                 const countersSnap = await transaction.get(countersRef);
                 let newJobNumber;
@@ -504,7 +504,6 @@ function NewJobSheetPage() {
                     transaction.set(partRef, { ...part, jobSheetId: jobSheetRef.id, jobNumber: newJobNumber });
                 });
 
-                return jobSheetRef.id;
             });
 
             toast.success('Job Sheet created successfully!');
@@ -555,7 +554,7 @@ function NewJobSheetPage() {
                     <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
                 </Menu>
             </Box>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px', color: theme.palette.primary.main }}>
                 New Job Sheet
             </Typography>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>

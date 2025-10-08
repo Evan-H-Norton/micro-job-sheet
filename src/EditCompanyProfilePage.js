@@ -78,7 +78,7 @@ function EditCompanyProfilePage({ viewMode = false }) {
       }}>
         <Button variant="outlined" onClick={() => navigate('/company-profiles')}>Back</Button>
       </Box>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }} color="primary">
         {pageTitle}
       </Typography>
       <CompanyProfileForm

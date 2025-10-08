@@ -57,7 +57,7 @@ function CompanyProfileForm({
         onChange={(e) => setCompanyTelephone(e.target.value)}
         disabled={viewMode}
       />
-      <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 2 }}>
+      <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 2 }} color="primary">
         Contacts
       </Typography>
       {contacts.map((contact, index) => (

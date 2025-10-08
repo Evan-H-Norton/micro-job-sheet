@@ -3,10 +3,8 @@ import { TableCell, TableRow, IconButton } from '@mui/material';
 import { FlashOn } from '@mui/icons-material';
 
 function JobSheetRow({ sheet, handleMenuClick, formatDate, theme, isCompletedJobsTable }) {
-    const childRowBackgroundColor = theme.palette.mode === 'dark' ? '#292929' : '#eeeeee';
-
     return (
-        <TableRow sx={{ backgroundColor: childRowBackgroundColor }}>
+        <TableRow sx={{ backgroundColor: 'rgba(25, 118, 210, 0.1)' }}>
             {/* Indent for Job Number */}
             <TableCell sx={{ border: 0, width: isCompletedJobsTable ? '14%' : '15%' }} />
 

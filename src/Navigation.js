@@ -10,13 +10,17 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import HomePage from './HomePage';
 import LoginPage from './LoginPage';
 import NewJobSheetPage from './NewJobSheetPage';
+import NewQuotePage from './NewQuotePage';
 import ViewJobSheetPage from './ViewJobSheetPage';
+import ViewQuotePage from './ViewQuotePage';
 import CompanyProfilesPage from './CompanyProfilesPage';
 
 import JobSheetDetailsPage from './JobSheetDetailsPage';
+import QuoteDetailsPage from './QuoteDetailsPage';
 import EditCompanyProfilePage from './EditCompanyProfilePage';
 import ProfilePage from './ProfilePage';
 import EditJobSheetPage from './EditJobSheetPage';
+import EditQuotePage from './EditQuotePage';
 import { lightTheme, darkTheme } from './theme';
 import { AuthContext, ThemeContext } from './App';
 import { Toaster } from 'react-hot-toast';
@@ -116,13 +120,17 @@ function Navigation() {
         <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
         <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/new-job-sheet" element={user ? <NewJobSheetPage /> : <Navigate to="/login" />} />
+        <Route path="/new-quote" element={user ? <NewQuotePage /> : <Navigate to="/login" />} />
         <Route path="/view-job-sheet" element={user ? <ViewJobSheetPage /> : <Navigate to="/login" />} />
+        <Route path="/view-quotes" element={user ? <ViewQuotePage /> : <Navigate to="/login" />} />
         <Route path="/company-profiles" element={user ? <CompanyProfilesPage /> : <Navigate to="/login" />} />
         <Route path="/company-profiles/new" element={user ? <EditCompanyProfilePage /> : <Navigate to="/login" />} />
         <Route path="/company-profiles/edit/:id" element={user ? <EditCompanyProfilePage /> : <Navigate to="/login" />} />
         <Route path="/company-profiles/:id" element={user ? <EditCompanyProfilePage viewMode={true} /> : <Navigate to="/login" />} />
         <Route path="/job-sheet/:id" element={user ? <JobSheetDetailsPage /> : <Navigate to="/login" />} />
         <Route path="/job-sheet/edit/:id" element={user ? <EditJobSheetPage /> : <Navigate to="/login" />} />
+        <Route path="/quote/:id" element={user ? <QuoteDetailsPage /> : <Navigate to="/login" />} />
+        <Route path="/quote/edit/:id" element={user ? <EditQuotePage /> : <Navigate to="/login" />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
       </Routes>
     </ThemeProvider>

@@ -85,7 +85,7 @@ function CompanyProfilesPage() {
       }}>
         <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2, mb: 2 }}>Back</Button>
         <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h4" component="h1" gutterBottom color="primary">
             Company Profiles
           </Typography>
           <Button variant="contained" component={Link} to="/company-profiles/new" sx={{ mb: 2 }}>

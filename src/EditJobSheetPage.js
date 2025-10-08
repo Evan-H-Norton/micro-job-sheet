@@ -596,7 +596,7 @@ function EditJobSheetPage() {
                     <MenuItem onClick={handleOpenPartsPage}>Parts List</MenuItem>
                 </Menu>
             </Box>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px', color: theme.palette.primary.main }}>
                 Edit Job Sheet
             </Typography>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>

@@ -6,6 +6,12 @@ function HomePage() {
   return (
     <Container maxWidth="sm">
       <Stack spacing={2} direction="column" sx={{ mt: 8 }}>
+        <Button variant="contained" component={Link} to="/new-quote">
+          New Quote
+        </Button>
+        <Button variant="contained" component={Link} to="/view-quotes">
+          View Quotes
+        </Button>
         <Button variant="contained" component={Link} to="/new-job-sheet">
           New Job Sheet
         </Button>
