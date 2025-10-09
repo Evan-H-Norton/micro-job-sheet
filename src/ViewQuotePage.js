@@ -83,6 +83,11 @@ function ViewQuotePage() {
     return `${day}-${month}-${year}`;
   };
 
+  const formatQuoteNumber = (quoteNumber) => {
+    if (!quoteNumber) return '';
+    return `Q-${String(quoteNumber).padStart(3, '0')}`;
+  };
+
   const filteredQuotes = quotes.filter(quote => {
     const searchTermMatch =
       (quote.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -129,7 +134,7 @@ function ViewQuotePage() {
           <TableBody>
             {filteredQuotes.map((quote) => (
               <TableRow key={quote.id}>
-                <TableCell>{quote.quoteNumber}</TableCell>
+                <TableCell>{formatQuoteNumber(quote.quoteNumber)}</TableCell>
                 <TableCell>{formatDate(quote.date)}</TableCell>
                 <TableCell>{quote.companyName}</TableCell>
                 <TableCell>{quote.quoteTitle}</TableCell>
