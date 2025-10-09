@@ -1,7 +1,7 @@
 import React from 'react';
 import { Grid, Typography, TextField, Box } from '@mui/material';
 
-function QuoteTitle({ quoteTitle, setQuoteTitle, quoteNumber }) {
+function QuoteTitle({ quoteTitle, setQuoteTitle, quoteNumber, viewMode = false }) {
     const currentDate = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate = currentDate.toLocaleDateString('en-GB', options);
@@ -14,14 +14,20 @@ function QuoteTitle({ quoteTitle, setQuoteTitle, quoteNumber }) {
             <Grid item xs={6}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Typography variant="h6" color="primary">
-                        {paddedQuoteNumber ? `Q-${paddedQuoteNumber} -` : 'Quote -'}
+                        {paddedQuoteNumber ? `Q-${paddedQuoteNumber}` : 'Quote'}
+                        {viewMode && quoteTitle && ` - ${quoteTitle}`}
                     </Typography>
-                    <TextField
-                        variant="standard"
-                        value={quoteTitle}
-                        onChange={(e) => setQuoteTitle(e.target.value)}
-                        sx={{ ml: 1 }}
-                    />
+                    {!viewMode &&
+                        <TextField
+                            variant="standard"
+                            value={quoteTitle}
+                            onChange={(e) => setQuoteTitle(e.target.value)}
+                            sx={{ ml: 1 }}
+                            InputProps={{
+                                disableUnderline: false
+                            }}
+                        />
+                    }
                 </Box>
             </Grid>
             <Grid item xs={6} sx={{ textAlign: 'right' }}>

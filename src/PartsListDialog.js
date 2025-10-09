@@ -18,9 +18,12 @@ const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) =
 
     const handlePartChange = (index, field, value) => {
         const updatedParts = [...parts];
-        if (field === 'price') {
-            const numericValue = value.replace(/[^0-9.]/g, '');
-            updatedParts[index][field] = numericValue;
+        if (field === 'quantity') {
+            const intValue = parseInt(value, 10);
+            updatedParts[index][field] = isNaN(intValue) ? 1 : Math.max(1, intValue);
+        } else if (field === 'price') {
+            const floatValue = parseFloat(value);
+            updatedParts[index][field] = isNaN(floatValue) ? 0 : floatValue;
         } else {
             updatedParts[index][field] = value;
         }
@@ -82,8 +85,14 @@ const PartsListDialog = ({ open, onClose, parts, setParts, viewMode = false }) =
                                     </TableCell>
                                     <TableCell sx={{ width: '15%' }}>
                                         <TextField
+                                            type="number"
                                             value={part.price}
                                             onChange={(e) => handlePartChange(index, 'price', e.target.value)}
+                                            onBlur={(e) => {
+                                                if (e.target.value === '') {
+                                                    handlePartChange(index, 'price', '0');
+                                                }
+                                            }}
                                             InputProps={{ readOnly: viewMode }}
                                         />
                                     </TableCell>

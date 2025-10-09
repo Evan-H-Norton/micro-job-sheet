@@ -103,9 +103,11 @@ function QuoteForm({
     const handleItemChange = (index, field, value) => {
         const newItems = [...items];
         if (field === 'quantity') {
-            newItems[index][field] = Math.max(1, value);
+            const intValue = parseInt(value, 10);
+            newItems[index][field] = isNaN(intValue) ? 1 : Math.max(1, intValue);
         } else if (field === 'price') {
-            newItems[index][field] = Math.max(0, value);
+            const floatValue = parseFloat(value);
+            newItems[index][field] = isNaN(floatValue) ? 0 : Math.max(0, floatValue);
         } else {
             newItems[index][field] = value;
         }
@@ -127,6 +129,12 @@ function QuoteForm({
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
+    };
+
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+        }
     };
 
     return (
@@ -264,6 +272,7 @@ function QuoteForm({
                                         <TextField
                                             value={item.description}
                                             onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                            onKeyDown={handleKeyDown}
                                             fullWidth
                                             multiline
                                             InputProps={{ readOnly: viewMode }}
@@ -273,7 +282,8 @@ function QuoteForm({
                                         <TextField
                                             type="number"
                                             value={item.quantity}
-                                            onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10))}
+                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                            onKeyDown={handleKeyDown}
                                             InputProps={{ readOnly: viewMode }}
                                         />
                                     </TableCell>
@@ -281,7 +291,8 @@ function QuoteForm({
                                         <TextField
                                             type="number"
                                             value={item.price}
-                                            onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
+                                            onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                                            onKeyDown={handleKeyDown}
                                             InputProps={{ readOnly: viewMode }}
                                         />
                                     </TableCell>
