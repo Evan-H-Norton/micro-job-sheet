@@ -52,7 +52,7 @@ function QuoteDetailsPage() {
       <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
             <QuoteHeader />
-            <QuoteTitle quoteTitle={quote.quoteTitle} setQuoteTitle={() => {}} />
+            <QuoteTitle quoteTitle={quote.quoteTitle} setQuoteTitle={() => {}} quoteNumber={quote.quoteNumber} />
             <QuoteForm
                 viewMode={true}
                 isSmallScreen={isSmallScreen}

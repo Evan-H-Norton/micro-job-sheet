@@ -53,6 +53,32 @@ function NewQuotePage() {
         }
     };
 
+    useEffect(() => {
+        if (selectedCompany) {
+            setCompanyAddress(selectedCompany.companyAddress || '');
+            setCompanyTelephone(selectedCompany.companyTelephone || '');
+            if (selectedCompany.contacts && selectedCompany.contacts.length === 1) {
+                const singleContact = selectedCompany.contacts[0];
+                setSelectedContact(singleContact);
+                setContactNameInput(singleContact.name || '');
+                setContactCellphoneInput(singleContact.cellphone || '');
+                setContactEmailInput(singleContact.email || '');
+            } else {
+                setSelectedContact(null);
+                setContactNameInput('');
+                setContactCellphoneInput('');
+                setContactEmailInput('');
+            }
+        } else {
+            setCompanyAddress('');
+            setCompanyTelephone('');
+            setSelectedContact(null);
+            setContactNameInput('');
+            setContactCellphoneInput('');
+            setContactEmailInput('');
+        }
+    }, [selectedCompany]);
+
     const handleBack = () => {
         navigate('/');
     };
