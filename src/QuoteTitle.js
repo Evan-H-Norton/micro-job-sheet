@@ -6,7 +6,7 @@ function QuoteTitle({ quoteTitle, setQuoteTitle, quoteNumber, viewMode = false }
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate = currentDate.toLocaleDateString('en-GB', options);
 
-    const paddedQuoteNumber = quoteNumber ? String(quoteNumber).padStart(3, '0') : null;
+    const paddedQuoteNumber = quoteNumber ? String(quoteNumber).padStart(4, '0') : null;
 
     return (
         <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2, mt: 2, p: 1, border: '1px solid grey', borderRadius: '5px' }}>

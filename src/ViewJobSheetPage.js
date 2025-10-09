@@ -290,6 +290,11 @@ function ViewJobSheetPage() {
     return `${day}-${month}-${year}`;
   };
 
+  const formatJobNumber = (jobNumber) => {
+    if (!jobNumber) return '';
+    return `J-${String(jobNumber).padStart(4, '0')}`;
+  };
+
   const filteredJobSheets = jobSheets.filter(sheet => {
     const searchTermMatch =
       (sheet.companyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -418,7 +423,7 @@ function ViewJobSheetPage() {
                       >
                         {openRows[sheets[0].jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                       </IconButton>
-                      {sheets[0].jobNumber}
+                      {formatJobNumber(sheets[0].jobNumber)}
                     </Box>
                   </TableCell>
                   <TableCell sx={{ width: '15%' }}>{formatDate(sheets[0].date)}</TableCell>
@@ -512,7 +517,7 @@ function ViewJobSheetPage() {
                           >
                             {openRows[jobNumber] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                           </IconButton>
-                          {jobNumber}
+                          {formatJobNumber(jobNumber)}
                         </Box>
                       </TableCell>
                       <TableCell sx={{ width: '14%' }}>{formatDate(sheets[0].date)}</TableCell>

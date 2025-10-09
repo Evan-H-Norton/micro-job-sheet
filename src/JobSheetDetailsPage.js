@@ -133,14 +133,18 @@ function JobSheetDetailsPage() {
     setDocActionMenu({ anchorEl: null, docId: null });
   };
 
-  const handleNavigateSheet = (direction) => {
-    const newIndex = currentSheetIndex + direction;
-    if (newIndex >= 0 && newIndex < jobSheets.length) {
-        const slideDir = direction === 1 ? 'left' : 'right';
-        navigate(`/job-sheet/${jobSheets[newIndex].id}`, { state: { direction: slideDir } });
-    }
-};
-
+    const handleNavigateSheet = (direction) => {
+      const newIndex = currentSheetIndex + direction;
+      if (newIndex >= 0 && newIndex < jobSheets.length) {
+          const slideDir = direction === 1 ? 'left' : 'right';
+          navigate(`/job-sheet/${jobSheets[newIndex].id}`, { state: { direction: slideDir } });
+      }
+    };
+  
+    const formatJobNumber = (jobNumber) => {
+      if (!jobNumber) return '';
+      return `J-${String(jobNumber).padStart(4, '0')}`;
+    };
   if (!jobSheet) {
     return <Typography>Loading...</Typography>;
   }
@@ -229,7 +233,7 @@ function JobSheetDetailsPage() {
 
       <Dialog open={openDocumentsDialog} onClose={() => setOpenDocumentsDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          Documents for Job # {jobSheet.jobNumber}, <span onClick={toggleShowAllDocuments} style={{cursor: 'pointer', textDecoration: showAllDocuments ? 'line-through' : 'none'}}>Sheet {currentSheetIndex + 1}</span>
+          Documents for Job # {formatJobNumber(jobSheet.jobNumber)}, <span onClick={toggleShowAllDocuments} style={{cursor: 'pointer', textDecoration: showAllDocuments ? 'line-through' : 'none'}}>Sheet {currentSheetIndex + 1}</span>
           <IconButton
             aria-label="close"
             onClick={() => setOpenDocumentsDialog(false)}

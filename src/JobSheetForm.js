@@ -138,6 +138,11 @@ function JobSheetForm({
         return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
     };
 
+    const formatJobNumber = (jobNumber) => {
+        if (!jobNumber) return '';
+        return `J-${String(jobNumber).padStart(4, '0')}`;
+    };
+
     return (
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
             <form onSubmit={onSubmit}>
@@ -146,7 +151,7 @@ function JobSheetForm({
                         <TextField
                             id="job-number"
                             label={isSmallScreen ? "Job #" : "Job Number"}
-                            value={jobNumber}
+                            value={formatJobNumber(jobNumber)}
                             InputProps={{ readOnly: true }}
                             fullWidth
                         />
@@ -479,7 +484,7 @@ function JobSheetForm({
                     </Grid>
                 </Grid>
                 <Grid container display="flex" gap={2} flexWrap={isSmallScreen ? "wrap" : "nowrap"} sx={{ mt: 2 }}>
-                    <Grid item width={isSmallScreen ? "100%" : (status === 'Open' ? "50%" : "33.333%")}>
+                    <Grid item width={isSmallScreen ? "100%" : (status === 'Open' ? "100%" : "50%")}>
                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                             <IconButton onClick={() => {
                                 const currentValue = parseFloat(labourCharge) || 0;
@@ -499,17 +504,9 @@ function JobSheetForm({
                             }} disabled={viewMode}><AddCircleOutline /></IconButton>
                         </Box>
                     </Grid>
-                    <Grid item width={isSmallScreen ? "100%" : (status === 'Open' ? "50%" : "33.333%")}>
-                        <TextField
-                            id="parts-charge"
-                            label="Parts Charge"
-                            fullWidth
-                            value={formatCurrency(partsCharge)}
-                            InputProps={{ readOnly: true }}
-                        />
-                    </Grid>
+                    
                     {(status === 'Pending Invoice' || status === 'Invoiced' || status === 'In Progress') && (
-                    <Grid item width={isSmallScreen ? "100%" : "33.333%"}>
+                    <Grid item width={isSmallScreen ? "100%" : "50%"}>
                         <TextField
                             id="invoiceNumber"
                             label="Invoice Number"

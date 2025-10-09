@@ -85,7 +85,7 @@ function ViewQuotePage() {
 
   const formatQuoteNumber = (quoteNumber) => {
     if (!quoteNumber) return '';
-    return `Q-${String(quoteNumber).padStart(3, '0')}`;
+    return `Q-${String(quoteNumber).padStart(4, '0')}`;
   };
 
   const filteredQuotes = quotes.filter(quote => {
