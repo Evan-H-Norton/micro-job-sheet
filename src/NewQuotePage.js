@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Button, Box, Paper, Slide, useMediaQuery, Typography } from '@mui/material';
+import { Button, Box, Paper, Slide, useMediaQuery, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
@@ -29,6 +29,10 @@ function NewQuotePage() {
     const [items, setItems] = useState([]);
     const [quoteTitle, setQuoteTitle] = useState('');
     const [comments, setComments] = useState('');
+    const [failure, setFailure] = useState('');
+    const [cause, setCause] = useState('');
+    const [recommendation, setRecommendation] = useState('');
+    const [documentType, setDocumentType] = useState('Quotation');
 
     const { user } = useContext(AuthContext);
 
@@ -129,6 +133,7 @@ function NewQuotePage() {
                     quoteNumber: newQuoteNumber,
                     date,
                     quoteTitle,
+                    documentType, // Add this line
                     companyId: finalCompanyId,
                     companyName: companyNameInput,
                     companyAddress: companyAddress,
@@ -136,6 +141,9 @@ function NewQuotePage() {
                     contact: newContact,
                     items,
                     comments,
+                    failure,
+                    cause,
+                    recommendation,
                     createdAt: new Date(),
                 };
 
@@ -171,7 +179,19 @@ function NewQuotePage() {
             </Typography>
             <Slide key={location.key} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
                 <Paper sx={{ p: 3, my: 2, mb: 3 }}>
-                    <QuoteTitle quoteTitle={quoteTitle} setQuoteTitle={setQuoteTitle} />
+                    <QuoteTitle quoteTitle={quoteTitle} setQuoteTitle={setQuoteTitle} documentType={documentType} />
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Document Type</InputLabel>
+                        <Select
+                            value={documentType}
+                            onChange={(e) => setDocumentType(e.target.value)}
+                            label="Document Type"
+                        >
+                            <MenuItem value="Quotation">Quotation</MenuItem>
+                            <MenuItem value="Report">Report</MenuItem>
+                            <MenuItem value="Report and Quotation">Report and Quotation</MenuItem>
+                        </Select>
+                    </FormControl>
                     <QuoteForm
                         isEditMode={false}
                         onSubmit={handleSubmit}
@@ -198,6 +218,13 @@ function NewQuotePage() {
                         setItems={setItems}
                         comments={comments}
                         setComments={setComments}
+                        failure={failure}
+                        setFailure={setFailure}
+                        cause={cause}
+                        setCause={setCause}
+                        recommendation={recommendation}
+                        setRecommendation={setRecommendation}
+                        documentType={documentType}
                     />
                 </Paper>
             </Slide>

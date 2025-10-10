@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useContext } from 'react';
-import { Button, Box, useMediaQuery, Slide, Paper, Typography } from '@mui/material';
+import { Button, Box, useMediaQuery, Slide, Paper, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
@@ -25,6 +25,10 @@ function EditQuotePage() {
     const [quoteNumber, setQuoteNumber] = useState(null);
     const [quoteTitle, setQuoteTitle] = useState('');
     const [comments, setComments] = useState('');
+    const [failure, setFailure] = useState('');
+    const [cause, setCause] = useState('');
+    const [recommendation, setRecommendation] = useState('');
+    const [documentType, setDocumentType] = useState('Quotation');
     const location = useLocation();
     const slideDirection = location.state?.direction || 'up';
 
@@ -47,6 +51,10 @@ function EditQuotePage() {
                 setQuoteNumber(data.quoteNumber || null);
                 setQuoteTitle(data.quoteTitle || '');
                 setComments(data.comments || '');
+                setFailure(data.failure || '');
+                setCause(data.cause || '');
+                setRecommendation(data.recommendation || '');
+                setDocumentType(data.documentType || 'Quotation');
             }
 
             const companiesCollection = collection(db, 'companyProfiles');
@@ -114,6 +122,10 @@ function EditQuotePage() {
             items,
             quoteTitle,
             comments,
+            failure,
+            cause,
+            recommendation,
+            documentType, // Add this line
         };
 
         const promise = updateDoc(quoteRef, quoteData);
@@ -147,7 +159,19 @@ function EditQuotePage() {
             </Typography>
             <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
                 <Paper sx={{ p: 3, my: 2, mb: 3 }}>
-                    <QuoteTitle quoteTitle={quoteTitle} setQuoteTitle={setQuoteTitle} quoteNumber={quoteNumber} />
+                    <QuoteTitle quoteTitle={quoteTitle} setQuoteTitle={setQuoteTitle} quoteNumber={quoteNumber} documentType={documentType} />
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Document Type</InputLabel>
+                        <Select
+                            value={documentType}
+                            onChange={(e) => setDocumentType(e.target.value)}
+                            label="Document Type"
+                        >
+                            <MenuItem value="Quotation">Quotation</MenuItem>
+                            <MenuItem value="Report">Report</MenuItem>
+                            <MenuItem value="Report and Quotation">Report and Quotation</MenuItem>
+                        </Select>
+                    </FormControl>
                     <QuoteForm
                         isEditMode={true}
                         onSubmit={handleSubmit}
@@ -174,6 +198,13 @@ function EditQuotePage() {
                         setItems={setItems}
                         comments={comments}
                         setComments={setComments}
+                        failure={failure}
+                        setFailure={setFailure}
+                        cause={cause}
+                        setCause={setCause}
+                        recommendation={recommendation}
+                        setRecommendation={setRecommendation}
+                        documentType={documentType}
                     />
                 </Paper>
             </Slide>

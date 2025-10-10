@@ -9,6 +9,7 @@ import QuoteForm from './QuoteForm';
 import QuoteHeader from './QuoteHeader';
 import QuoteTitle from './QuoteTitle';
 
+
 function QuoteDetailsPage() {
   const [quote, setQuote] = useState(null);
   const { id } = useParams();
@@ -52,13 +53,20 @@ function QuoteDetailsPage() {
       <Slide key={id} direction={slideDirection} in={true} mountOnEnter unmountOnExit timeout={300}>
         <Paper sx={{ p: 3, mt: 3, mb: 3 }}>
             <QuoteHeader />
-            <QuoteTitle quoteTitle={quote.quoteTitle} setQuoteTitle={() => {}} quoteNumber={quote.quoteNumber} viewMode={true} />
+            <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '10px', color: theme.palette.primary.main }}>
+                {quote.documentType}
+            </Typography>
+            <QuoteTitle viewMode={true} quoteTitle={quote.quoteTitle} quoteNumber={quote.quoteNumber} documentType={quote.documentType} />
             <QuoteForm
                 viewMode={true}
                 isSmallScreen={isSmallScreen}
                 quoteTitle={quote.quoteTitle}
                 items={quote.items}
                 comments={quote.comments}
+                failure={quote.failure}
+                cause={quote.cause}
+                recommendation={quote.recommendation}
+                documentType={quote.documentType}
                 companyNameInput={quote.companyName}
                 companyAddress={quote.companyAddress}
                 companyTelephone={quote.companyTelephone}

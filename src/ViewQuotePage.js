@@ -83,9 +83,16 @@ function ViewQuotePage() {
     return `${day}-${month}-${year}`;
   };
 
-  const formatQuoteNumber = (quoteNumber) => {
-    if (!quoteNumber) return '';
-    return `Q-${String(quoteNumber).padStart(4, '0')}`;
+  const formatQuoteNumber = (quote) => {
+    if (!quote || !quote.quoteNumber) return '';
+    const number = String(quote.quoteNumber).padStart(4, '0');
+    if (quote.documentType === 'Report') {
+        return `R-${number}`;
+    } else if (quote.documentType === 'Report and Quotation') {
+        return `RQ-${number}`;
+    } else {
+        return `Q-${number}`;
+    }
   };
 
   const filteredQuotes = quotes.filter(quote => {
@@ -134,7 +141,7 @@ function ViewQuotePage() {
           <TableBody>
             {filteredQuotes.map((quote) => (
               <TableRow key={quote.id}>
-                <TableCell>{formatQuoteNumber(quote.quoteNumber)}</TableCell>
+                <TableCell>{formatQuoteNumber(quote)}</TableCell>
                 <TableCell>{formatDate(quote.date)}</TableCell>
                 <TableCell>{quote.companyName}</TableCell>
                 <TableCell>{quote.quoteTitle}</TableCell>

@@ -3,6 +3,7 @@ import { Typography, TextField, Button, Box, Autocomplete, Grid, Divider, Paper,
 import { TextareaAutosize } from '@mui/base/TextareaAutosize';
 import { styled } from '@mui/system';
 import { AddCircleOutline, RemoveCircleOutline } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 
 const blue = {
     100: '#DAECFF',
@@ -82,9 +83,17 @@ function QuoteForm({
     setItems,
     comments,
     setComments,
+    failure,
+    setFailure,
+    cause,
+    setCause,
+    recommendation,
+    setRecommendation,
+    documentType,
     isEditMode = false,
     viewMode = false,
 }) {
+    const theme = useTheme();
     const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
     const [itemToDelete, setItemToDelete] = React.useState(null);
 
@@ -240,81 +249,126 @@ function QuoteForm({
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                <StyledTextarea
-                    id="comments"
-                    aria-label="Comments"
-                    minRows={4}
-                    placeholder="Add comments here..."
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    readOnly={viewMode}
-                />
+                {documentType.includes('Report') && (
+                    <Box sx={{ border: '1px solid grey', borderRadius: '5px', p: 2, my: 2 }}>
+                        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center', color: theme.palette.primary.main, textDecoration: 'underline' }}>Report</Typography>
+                        <Typography variant="h6" gutterBottom>Failure</Typography>
+                        <StyledTextarea
+                            id="failure"
+                            aria-label="Failure"
+                            minRows={3}
+                            placeholder="Describe the failure..."
+                            value={failure}
+                            onChange={(e) => setFailure(e.target.value)}
+                            readOnly={viewMode}
+                        />
 
-                <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
+                        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Cause</Typography>
+                        <StyledTextarea
+                            id="cause"
+                            aria-label="Cause"
+                            minRows={3}
+                            placeholder="Describe the cause..."
+                            value={cause}
+                            onChange={(e) => setCause(e.target.value)}
+                            readOnly={viewMode}
+                        />
 
-                <Typography variant="h6" gutterBottom>Items</Typography>
-                <TableContainer component={Paper} sx={{ mb: 2 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ width: '55%' }}>Description</TableCell>
-                                <TableCell>Quantity</TableCell>
-                                <TableCell sx={{ minWidth: 100 }}>Price</TableCell>
-                                <TableCell sx={{ padding: 0 }}>Total</TableCell>
-                                {!viewMode && <TableCell sx={{ padding: 0 }}></TableCell>}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {items.map((item, index) => (
-                                <TableRow key={index}>
-                                    {/* The background color is set to a light blue similar to the company logo. */}
-                                    <TableCell sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                                        <TextField
-                                            value={item.description}
-                                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            fullWidth
-                                            multiline
-                                            InputProps={{ readOnly: viewMode }}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            type="number"
-                                            value={item.quantity}
-                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            InputProps={{ readOnly: viewMode }}
-                                        />
-                                    </TableCell>
-                                    <TableCell sx={{ minWidth: 100 }}>
-                                        <TextField
-                                            type="number"
-                                            value={item.price}
-                                            onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            InputProps={{ readOnly: viewMode }}
-                                        />
-                                    </TableCell>
-                                    <TableCell sx={{ padding: 0 }}>{formatCurrency(item.quantity * item.price)}</TableCell>
-                                    {!viewMode && (
-                                        <TableCell sx={{ padding: 0 }}>
-                                            <IconButton onClick={() => handleRemoveItem(index)}>
-                                                <RemoveCircleOutline />
-                                            </IconButton>
-                                        </TableCell>
-                                    )}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Recommendation</Typography>
+                        <StyledTextarea
+                            id="recommendation"
+                            aria-label="Recommendation"
+                            minRows={3}
+                            placeholder="Enter recommendations..."
+                            value={recommendation}
+                            onChange={(e) => setRecommendation(e.target.value)}
+                            readOnly={viewMode}
+                        />
+                    </Box>
+                )}
 
-                {!viewMode && <Button variant="outlined" onClick={handleAddItem} startIcon={<AddCircleOutline />}>Add Item</Button>}
+                {documentType.includes('Quotation') && (
+                    <Box sx={{ border: '1px solid grey', borderRadius: '5px', p: 2, my: 2 }}>
+                        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center', color: theme.palette.primary.main, textDecoration: 'underline' }}>Quotation</Typography>
+                        <StyledTextarea
+                            id="comments"
+                            aria-label="Comments"
+                            minRows={4}
+                            placeholder="Add comments here..."
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            readOnly={viewMode}
+                        />
 
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Typography variant="h6">Total: {formatCurrency(calculateTotal())}</Typography>
-                </Box>
+                        <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
+
+                        <Typography variant="h6" gutterBottom>Items</Typography>
+                        <TableContainer component={Paper} sx={{ mb: 2 }}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ width: '55%' }}>Description</TableCell>
+                                        <TableCell>Quantity</TableCell>
+                                        <TableCell sx={{ minWidth: 100 }}>Price</TableCell>
+                                        <TableCell sx={{ padding: 0 }}>Total</TableCell>
+                                        {!viewMode && <TableCell sx={{ padding: 0 }}></TableCell>}
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {items.map((item, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                                                <TextField
+                                                    value={item.description}
+                                                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                                    onKeyDown={handleKeyDown}
+                                                    fullWidth
+                                                    multiline
+                                                    InputProps={{ readOnly: viewMode }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                                    onKeyDown={handleKeyDown}
+                                                    InputProps={{ readOnly: viewMode }}
+                                                />
+                                            </TableCell>
+                                            <TableCell sx={{ minWidth: 100 }}>
+                                                <TextField
+                                                    type="number"
+                                                    value={item.price}
+                                                    onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                                                    onKeyDown={handleKeyDown}
+                                                    InputProps={{ readOnly: viewMode }}
+                                                />
+                                            </TableCell>
+                                            <TableCell sx={{ padding: 0 }}>{formatCurrency(item.quantity * item.price)}</TableCell>
+                                            {!viewMode && (
+                                                <TableCell sx={{ padding: 0 }}>
+                                                    <IconButton onClick={() => handleRemoveItem(index)}>
+                                                        <RemoveCircleOutline />
+                                                    </IconButton>
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        {!viewMode && <Button variant="outlined" onClick={handleAddItem} startIcon={<AddCircleOutline />}>Add Item</Button>}
+
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Typography variant="h6">Total: {formatCurrency(calculateTotal())}</Typography>
+                        </Box>
+                        <Typography variant="caption" display="block" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
+                            Due to fluctuations in exchange rates, Microfusion is unable to guarantee pricing beyond the validity period of the quotation or while stocks remain available. Prices are subject to change without prior notice. Should any quoted items be placed on back order, the prevailing rate of exchange will continue to apply.
+                        </Typography>
+                    </Box>
+                )}
 
                 {!viewMode && <Box sx={{ mt: 3, textAlign: 'center' }}>
                     <Button type="submit" variant="contained" color="primary" size="large">
