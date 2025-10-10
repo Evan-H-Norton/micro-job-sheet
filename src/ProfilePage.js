@@ -3,7 +3,8 @@ import { Typography, Paper, Button, TextField, Box } from '@mui/material';
 import { AuthContext } from './App';
 import { reauthenticateWithCredential, EmailAuthProvider, updatePassword, updateProfile } from 'firebase/auth';
 import { useTheme } from '@mui/material/styles';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,18 +16,34 @@ function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const [technicianName, setTechnicianName] = useState('');
+  const [cellPhoneNumber, setCellPhoneNumber] = useState('');
 
   const navigate = useNavigate();
   const theme = useTheme();
 
   useEffect(() => {
     if (user) {
-      setTechnicianName(user.displayName || '');
+      const fetchUserProfile = async () => {
+        const userProfileRef = doc(db, 'userProfiles', user.uid);
+        const userProfileSnap = await getDoc(userProfileRef);
+        if (userProfileSnap.exists()) {
+          const userProfileData = userProfileSnap.data();
+          setTechnicianName(userProfileData.technicianName || user.displayName || '');
+          setCellPhoneNumber(userProfileData.cellPhoneNumber || '');
+        } else {
+          setTechnicianName(user.displayName || '');
+        }
+      };
+      fetchUserProfile();
     }
   }, [user]);
 
   const handleUpdateProfile = async () => {
-    const promise = updateProfile(auth.currentUser, { displayName: technicianName });
+    const userProfileRef = doc(db, 'userProfiles', user.uid);
+    const profileData = { technicianName, cellPhoneNumber };
+    const promise = setDoc(userProfileRef, profileData, { merge: true })
+      .then(() => updateProfile(auth.currentUser, { displayName: technicianName }));
+
     toast.promise(promise, {
       loading: 'Updating profile...',
       success: () => {
@@ -98,6 +115,13 @@ function ProfilePage() {
               fullWidth
               value={technicianName}
               onChange={(e) => setTechnicianName(e.target.value)}
+            />
+            <TextField
+              id="cell-phone-number"
+              label="Cell Phone Number"
+              fullWidth
+              value={cellPhoneNumber}
+              onChange={(e) => setCellPhoneNumber(e.target.value)}
             />
             <Button variant="outlined" onClick={() => setShowChangePassword(!showChangePassword)}>
               Change Password

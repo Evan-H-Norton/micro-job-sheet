@@ -89,6 +89,9 @@ function QuoteForm({
     setCause,
     recommendation,
     setRecommendation,
+    technicianName,
+    technicianCellPhoneNumber,
+    technicianEmail,
     documentType,
     isEditMode = false,
     viewMode = false,
@@ -369,6 +372,38 @@ function QuoteForm({
                         </Typography>
                     </Box>
                 )}
+
+                <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
+
+                <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
+                    <Grid item xs={4}>
+                        <TextField
+                            id="technician-name"
+                            label="Technician Name"
+                            fullWidth
+                            value={technicianName}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <TextField
+                            id="technician-cell-phone-number"
+                            label="Technician Cell Phone Number"
+                            fullWidth
+                            value={technicianCellPhoneNumber}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <TextField
+                            id="technician-email"
+                            label="Technician Email"
+                            fullWidth
+                            value={technicianEmail}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                </Grid>
 
                 {!viewMode && <Box sx={{ mt: 3, textAlign: 'center' }}>
                     <Button type="submit" variant="contained" color="primary" size="large">

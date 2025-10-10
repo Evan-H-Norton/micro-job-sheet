@@ -29,10 +29,32 @@ function EditQuotePage() {
     const [cause, setCause] = useState('');
     const [recommendation, setRecommendation] = useState('');
     const [documentType, setDocumentType] = useState('Quotation');
+    const [technicianName, setTechnicianName] = useState('');
+    const [technicianCellPhoneNumber, setTechnicianCellPhoneNumber] = useState('');
+    const [technicianEmail, setTechnicianEmail] = useState('');
     const location = useLocation();
     const slideDirection = location.state?.direction || 'up';
 
     const { user } = useContext(AuthContext);
+
+    useEffect(() => {
+        if (user) {
+            const fetchUserProfile = async () => {
+                const userProfileRef = doc(db, 'userProfiles', user.uid);
+                const userProfileSnap = await getDoc(userProfileRef);
+                if (userProfileSnap.exists()) {
+                    const userProfileData = userProfileSnap.data();
+                    setTechnicianName(userProfileData.technicianName || user.displayName || '');
+                    setTechnicianCellPhoneNumber(userProfileData.cellPhoneNumber || '');
+                    setTechnicianEmail(user.email || '');
+                } else {
+                    setTechnicianName(user.displayName || '');
+                    setTechnicianEmail(user.email || '');
+                }
+            };
+            fetchUserProfile();
+        }
+    }, [user]);
 
     useEffect(() => {
         const fetchQuoteAndCompanies = async () => {
@@ -54,6 +76,9 @@ function EditQuotePage() {
                 setFailure(data.failure || '');
                 setCause(data.cause || '');
                 setRecommendation(data.recommendation || '');
+                setTechnicianName(data.technicianName || '');
+                setTechnicianCellPhoneNumber(data.technicianCellPhoneNumber || '');
+                setTechnicianEmail(data.technicianEmail || '');
                 setDocumentType(data.documentType || 'Quotation');
             }
 
@@ -125,6 +150,9 @@ function EditQuotePage() {
             failure,
             cause,
             recommendation,
+            technicianName,
+            technicianCellPhoneNumber,
+            technicianEmail,
             documentType, // Add this line
         };
 
@@ -204,6 +232,9 @@ function EditQuotePage() {
                         setCause={setCause}
                         recommendation={recommendation}
                         setRecommendation={setRecommendation}
+                        technicianName={technicianName}
+                        technicianCellPhoneNumber={technicianCellPhoneNumber}
+                        technicianEmail={technicianEmail}
                         documentType={documentType}
                     />
                 </Paper>

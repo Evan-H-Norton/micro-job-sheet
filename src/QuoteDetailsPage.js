@@ -66,6 +66,9 @@ function QuoteDetailsPage() {
                 failure={quote.failure}
                 cause={quote.cause}
                 recommendation={quote.recommendation}
+                technicianName={quote.technicianName}
+                technicianCellPhoneNumber={quote.technicianCellPhoneNumber}
+                technicianEmail={quote.technicianEmail}
                 documentType={quote.documentType}
                 companyNameInput={quote.companyName}
                 companyAddress={quote.companyAddress}

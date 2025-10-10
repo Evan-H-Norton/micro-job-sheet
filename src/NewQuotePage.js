@@ -3,7 +3,7 @@ import { Button, Box, Paper, Slide, useMediaQuery, Typography, FormControl, Inpu
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { db } from './firebase';
-import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, getDoc } from 'firebase/firestore';
 import { AuthContext } from './App';
 import toast from 'react-hot-toast';
 import QuoteForm from './QuoteForm';
@@ -33,8 +33,30 @@ function NewQuotePage() {
     const [cause, setCause] = useState('');
     const [recommendation, setRecommendation] = useState('');
     const [documentType, setDocumentType] = useState('Quotation');
+    const [technicianName, setTechnicianName] = useState('');
+    const [technicianCellPhoneNumber, setTechnicianCellPhoneNumber] = useState('');
+    const [technicianEmail, setTechnicianEmail] = useState('');
 
     const { user } = useContext(AuthContext);
+
+    useEffect(() => {
+        if (user) {
+            const fetchUserProfile = async () => {
+                const userProfileRef = doc(db, 'userProfiles', user.uid);
+                const userProfileSnap = await getDoc(userProfileRef);
+                if (userProfileSnap.exists()) {
+                    const userProfileData = userProfileSnap.data();
+                    setTechnicianName(userProfileData.technicianName || user.displayName || '');
+                    setTechnicianCellPhoneNumber(userProfileData.cellPhoneNumber || '');
+                    setTechnicianEmail(user.email || '');
+                } else {
+                    setTechnicianName(user.displayName || '');
+                    setTechnicianEmail(user.email || '');
+                }
+            };
+            fetchUserProfile();
+        }
+    }, [user]);
 
     useEffect(() => {
         const fetchCompanies = async () => {
@@ -144,6 +166,9 @@ function NewQuotePage() {
                     failure,
                     cause,
                     recommendation,
+                    technicianName,
+                    technicianCellPhoneNumber,
+                    technicianEmail,
                     createdAt: new Date(),
                 };
 
@@ -224,6 +249,9 @@ function NewQuotePage() {
                         setCause={setCause}
                         recommendation={recommendation}
                         setRecommendation={setRecommendation}
+                        technicianName={technicianName}
+                        technicianCellPhoneNumber={technicianCellPhoneNumber}
+                        technicianEmail={technicianEmail}
                         documentType={documentType}
                     />
                 </Paper>
