@@ -376,9 +376,9 @@ function QuoteForm({
                 )}
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
-
-                <Grid container display="flex" gap={2} flexWrap="wrap" sx={{ mt: 2 }}>
-                    <Grid item flexGrow={1}>
+				
+				<Grid container display="flex" gap={2} flexWrap="wrap" sx={{ mt: 2 }}>
+                    <Grid item flexGrow={1} sx={{ minWidth: '300px' }}>
                         <TextField
                             id="technician-name"
                             label="Technician Name"
@@ -387,19 +387,11 @@ function QuoteForm({
                             InputProps={{ readOnly: true }}
                         />
                     </Grid>
-                    <Grid item flexGrow={1}>
-                        <TextField
-                            id="technician-cell-phone-number"
-                            label="Technician Cell Phone Number"
-                            fullWidth
-                            value={technicianCellPhoneNumber}
-                            InputProps={{ readOnly: true }}
-                        />
-                    </Grid>
-                    <Grid item flexGrow={1}>
+                    <Grid item flexGrow={1} sx={{ minWidth: '300px' }}>
                         <TextField
                             id="technician-email"
                             label="Technician Email"
+                            type="email"
                             fullWidth
                             value={technicianEmail}
                             InputProps={{ readOnly: true }}
