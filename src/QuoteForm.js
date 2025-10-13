@@ -60,7 +60,6 @@ const StyledTextarea = styled(TextareaAutosize)(
 
 function QuoteForm({
     onSubmit,
-    isSmallScreen,
     companies,
     selectedCompany,
     handleCompanyChange,
@@ -306,8 +305,8 @@ function QuoteForm({
                         <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
                         <Typography variant="h6" gutterBottom>Items</Typography>
-                        <TableContainer component={Paper} sx={{ mb: 2 }}>
-                            <Table>
+                        <TableContainer component={Paper} sx={{ mb: 2, [theme.breakpoints.down('sm')]: { overflowX: 'auto' } }}>
+                            <Table sx={{ [theme.breakpoints.down('sm')]: { minWidth: 650 } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell sx={{ width: '55%' }}>Description</TableCell>
@@ -375,8 +374,8 @@ function QuoteForm({
 
                 <Divider sx={{ my: 3, borderBottomWidth: 8 }} />
 
-                <Grid container spacing={2} sx={{ mt: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
-                    <Grid item xs={4}>
+                <Grid container display="flex" gap={2} flexWrap="wrap" sx={{ mt: 2 }}>
+                    <Grid item flexGrow={1}>
                         <TextField
                             id="technician-name"
                             label="Technician Name"
@@ -385,7 +384,7 @@ function QuoteForm({
                             InputProps={{ readOnly: true }}
                         />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item flexGrow={1}>
                         <TextField
                             id="technician-cell-phone-number"
                             label="Technician Cell Phone Number"
@@ -394,7 +393,7 @@ function QuoteForm({
                             InputProps={{ readOnly: true }}
                         />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item flexGrow={1}>
                         <TextField
                             id="technician-email"
                             label="Technician Email"
