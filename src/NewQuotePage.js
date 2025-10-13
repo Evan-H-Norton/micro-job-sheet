@@ -156,6 +156,7 @@ function NewQuotePage() {
                     date,
                     quoteTitle,
                     documentType, // Add this line
+                    status: 'Valid',
                     companyId: finalCompanyId,
                     companyName: companyNameInput,
                     companyAddress: companyAddress,
