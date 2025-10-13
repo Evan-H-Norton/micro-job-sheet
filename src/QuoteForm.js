@@ -369,6 +369,9 @@ function QuoteForm({
                         <Typography variant="caption" display="block" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
                             Due to fluctuations in exchange rates, Microfusion is unable to guarantee pricing beyond the validity period of the quotation or while stocks remain available. Prices are subject to change without prior notice. Should any quoted items be placed on back order, the prevailing rate of exchange will continue to apply.
                         </Typography>
+                        <Typography variant="caption" display="block" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic', color: 'red' }}>
+                            This quote is valid for a period of 3 days or while current stock is available
+                        </Typography>
                     </Box>
                 )}
 
